@@ -69,10 +69,17 @@ export default function EventRow({
       {/* Staff */}
       <PeopleStack people={staff} />
 
-      {/* Channel */}
-      <div className="truncate text-gray-600">{event.channel?.name ?? "—"}</div>
+      {/* Channel (broadcast + streaming) */}
+      <div className="min-w-0 text-gray-600">
+        <div className="truncate">{event.channel?.name ?? "—"}</div>
+        {event.streamChannels.length > 0 && (
+          <div className="truncate text-xs text-gray-400">
+            {event.streamChannels.map((s) => s.name).join(", ")}
+          </div>
+        )}
+      </div>
 
-      {/* Main & Media */}
+      {/* SMM (participants / media) */}
       <div className="min-w-0 text-xs text-gray-600">
         {main.length > 0 && <div className="truncate">{main.map((p) => p.name).join(" vs ")}</div>}
         {media.length > 0 && (

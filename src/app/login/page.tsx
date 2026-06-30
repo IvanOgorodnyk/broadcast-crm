@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Logo from "@/components/Logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,9 +34,9 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <form onSubmit={onSubmit} className="w-full max-w-sm">
-        <h1 className="mb-8 text-center text-2xl font-bold tracking-tight">
-          <span className="text-brand">●</span> Broadcast CRM
-        </h1>
+        <div className="mb-8 flex justify-center">
+          <Logo size={40} />
+        </div>
 
         <label className="mb-1 block text-sm font-semibold">Email</label>
         <input

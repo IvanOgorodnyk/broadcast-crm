@@ -172,7 +172,7 @@ export default function Calendar({ canEdit }: { canEdit: boolean }) {
             <span>Casters & Analysts</span>
             <span>Staff</span>
             <span>Channel</span>
-            <span>Main & Media</span>
+            <span>SMM</span>
           </div>
         )}
 

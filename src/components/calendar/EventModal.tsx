@@ -27,12 +27,14 @@ type Draft = {
   disciplineId: string;
   studioId: string;
   channelId: string;
+  discordChannelId: string;
   streamLinks: string;
   notes: string;
   internalComment: string;
   color: string;
   assignments: { userId: string; role: AssignmentRole }[];
   participantIds: string[];
+  streamChannelIds: string[];
 };
 
 function toLocalInput(iso: string) {
@@ -58,12 +60,14 @@ function emptyDraft(meta: Meta, defaultDate: Date): Draft {
     disciplineId: meta.disciplines[0]?.id ?? "",
     studioId: "",
     channelId: "",
+    discordChannelId: "",
     streamLinks: "",
     notes: "",
     internalComment: "",
     color: "",
     assignments: [],
     participantIds: [],
+    streamChannelIds: [],
   };
 }
 
@@ -80,12 +84,14 @@ function fromEvent(e: CalendarEvent): Draft {
     disciplineId: e.discipline.id,
     studioId: e.studio?.id ?? "",
     channelId: e.channel?.id ?? "",
+    discordChannelId: e.discordChannel?.id ?? "",
     streamLinks: e.streamLinks ?? "",
     notes: e.notes ?? "",
     internalComment: e.internalComment ?? "",
     color: e.color ?? "",
     assignments: e.assignments.map((a) => ({ userId: a.user.id, role: a.role })),
     participantIds: e.participants.map((p) => p.id),
+    streamChannelIds: e.streamChannels.map((s) => s.id),
   };
 }
 
@@ -128,12 +134,14 @@ export default function EventModal({
       disciplineId: draft.disciplineId,
       studioId: draft.studioId || null,
       channelId: draft.channelId || null,
+      discordChannelId: draft.discordChannelId || null,
       streamLinks: draft.streamLinks,
       notes: draft.notes,
       internalComment: draft.internalComment,
       color: draft.color || null,
       assignments: draft.assignments.filter((a) => a.userId),
       participantIds: draft.participantIds,
+      streamChannelIds: draft.streamChannelIds,
     };
     const url = draft.id ? `/api/events/${draft.id}` : "/api/events";
     const res = await fetch(url, {
@@ -322,13 +330,51 @@ function EditForm({
             ))}
           </select>
         </Field>
-        <Field label="Channel">
+        <Field label="Broadcast channel">
           <select className={inputCls} value={draft.channelId} onChange={(e) => set("channelId", e.target.value)}>
             <option value="">—</option>
             {meta.channels.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Discord channel">
+          <select className={inputCls} value={draft.discordChannelId} onChange={(e) => set("discordChannelId", e.target.value)}>
+            <option value="">—</option>
+            {meta.discordChannels.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Streaming channels">
+          <div className="flex flex-wrap gap-2 pt-1">
+            {meta.streamChannels.length === 0 && <span className="text-sm text-gray-400">None configured</span>}
+            {meta.streamChannels.map((c) => {
+              const on = draft.streamChannelIds.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() =>
+                    set(
+                      "streamChannelIds",
+                      on
+                        ? draft.streamChannelIds.filter((id) => id !== c.id)
+                        : [...draft.streamChannelIds, c.id]
+                    )
+                  }
+                  className={`rounded-full border px-3 py-1 text-xs ${
+                    on ? "border-brand bg-brand text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              );
+            })}
+          </div>
         </Field>
       </div>
 
@@ -451,7 +497,12 @@ function ReadView({ event }: { event: CalendarEvent }) {
         <Info label="Time" value={`${hhmm(event.startsAt)} – ${hhmm(event.endsAt)}`} />
         <Info label="Setup" value={SETUP_LABEL[event.setupType]} />
         <Info label="Studio" value={event.studio?.name ?? "—"} />
-        <Info label="Channel" value={event.channel?.name ?? "—"} />
+        <Info label="Broadcast channel" value={event.channel?.name ?? "—"} />
+        <Info label="Discord channel" value={event.discordChannel?.name ?? "—"} />
+        <Info
+          label="Streaming"
+          value={event.streamChannels.length ? event.streamChannels.map((s) => s.name).join(", ") : "—"}
+        />
         {event.countryTag && <Info label="Country / language" value={event.countryTag} />}
       </dl>
 

@@ -5,6 +5,7 @@ export const eventInclude = {
   discipline: true,
   studio: true,
   channel: true,
+  discordChannel: true,
   createdBy: { select: { id: true, username: true } },
   assignments: {
     include: {
@@ -14,6 +15,7 @@ export const eventInclude = {
     },
   },
   participants: { include: { participant: true } },
+  streamChannels: { include: { streamChannel: true } },
 } as const;
 
 export type EventWithRelations = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
@@ -36,6 +38,13 @@ export function serializeEvent(e: EventWithRelations) {
     discipline: { id: e.discipline.id, name: e.discipline.name, color: e.discipline.color },
     studio: e.studio ? { id: e.studio.id, name: e.studio.name } : null,
     channel: e.channel ? { id: e.channel.id, name: e.channel.name } : null,
+    discordChannel: e.discordChannel
+      ? { id: e.discordChannel.id, name: e.discordChannel.name }
+      : null,
+    streamChannels: e.streamChannels.map((s) => ({
+      id: s.streamChannel.id,
+      name: s.streamChannel.name,
+    })),
     createdBy: e.createdBy,
     assignments: e.assignments.map((a) => ({
       id: a.id,
@@ -83,8 +92,10 @@ export const eventInputSchema = z.object({
   disciplineId: z.string().min(1, "Discipline is required"),
   studioId: z.string().optional().nullable(),
   channelId: z.string().optional().nullable(),
+  discordChannelId: z.string().optional().nullable(),
   assignments: z.array(assignmentSchema).default([]),
   participantIds: z.array(z.string()).default([]),
+  streamChannelIds: z.array(z.string()).default([]),
 });
 
 export type EventInput = z.infer<typeof eventInputSchema>;

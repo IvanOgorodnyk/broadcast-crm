@@ -60,4 +60,6 @@ export const STATUSES: EventStatus[] = [
   "CHANGED",
 ];
 
-export const SETUP_TYPES: SetupType[] = ["STUDIO", "REMOTE", "ON_SITE", "HYBRID"];
+// Real OBLOGA setup is Remote-only. Other enum values remain valid in the DB
+// but are not offered in the UI.
+export const SETUP_TYPES: SetupType[] = ["REMOTE"];

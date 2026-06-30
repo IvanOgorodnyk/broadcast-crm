@@ -39,6 +39,9 @@ export async function GET(req: Request) {
   const channelIds = getAll("channelId");
   if (channelIds.length) where.channelId = { in: channelIds };
 
+  const discordChannelIds = getAll("discordChannelId");
+  if (discordChannelIds.length) where.discordChannelId = { in: discordChannelIds };
+
   const setupTypes = getAll("setupType");
   if (setupTypes.length) where.setupType = { in: setupTypes as never };
 
@@ -61,6 +64,12 @@ export async function GET(req: Request) {
   const participantIds = getAll("participantId");
   if (participantIds.length)
     assignmentFilters.push({ participants: { some: { participantId: { in: participantIds } } } });
+
+  const streamChannelIds = getAll("streamChannelId");
+  if (streamChannelIds.length)
+    assignmentFilters.push({
+      streamChannels: { some: { streamChannelId: { in: streamChannelIds } } },
+    });
 
   if (assignmentFilters.length) where.AND = assignmentFilters;
 
@@ -107,9 +116,11 @@ export async function POST(req: Request) {
       disciplineId: data.disciplineId,
       studioId: data.studioId || null,
       channelId: data.channelId || null,
+      discordChannelId: data.discordChannelId || null,
       createdById: auth.user.id,
       assignments: { create: data.assignments.map((a) => ({ userId: a.userId, role: a.role })) },
       participants: { create: data.participantIds.map((id) => ({ participantId: id })) },
+      streamChannels: { create: data.streamChannelIds.map((id) => ({ streamChannelId: id })) },
     },
     include: eventInclude,
   });

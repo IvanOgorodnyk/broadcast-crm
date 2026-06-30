@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Avatar from "./Avatar";
+import Logo from "./Logo";
 import type { SystemRole } from "@prisma/client";
 
 type Props = {
@@ -44,8 +45,8 @@ export default function TopBar({ user, unread }: Props) {
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between bg-nav px-4 py-2 text-white">
       <div className="flex items-center gap-1">
-        <Link href="/calendar" className="mr-3 flex items-center gap-1 font-extrabold tracking-tight">
-          <span className="text-brand">●</span> BROADCAST CRM
+        <Link href="/calendar" className="mr-3">
+          <Logo size={24} light />
         </Link>
         {link("/calendar", "Calendar")}
         {user.role === "ADMIN" && link("/admin/users", "Admin")}

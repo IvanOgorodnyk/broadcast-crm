@@ -132,7 +132,24 @@ model Studio {
   createdAt DateTime @default(now())
 }
 
+// Broadcast channel (e.g. "Broadcast").
 model Channel {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  events Event[]
+  createdAt DateTime @default(now())
+}
+
+// Streaming destination (e.g. YouTube, Twitch). An event can stream to several.
+model StreamChannel {
+  id     String               @id @default(cuid())
+  name   String               @unique
+  events EventStreamChannel[]
+  createdAt DateTime @default(now())
+}
+
+// Discord channel used for the production (e.g. "Studio 1").
+model DiscordChannel {
   id     String  @id @default(cuid())
   name   String  @unique
   events Event[]
@@ -160,7 +177,7 @@ model Event {
   startsAt    DateTime
   endsAt      DateTime
   status      EventStatus @default(DRAFT)
-  setupType   SetupType   @default(STUDIO)
+  setupType   SetupType   @default(REMOTE)
   countryTag  String? // language / country tag, e.g. "EN", "UA"
   streamLinks String? // newline-separated stream/channel links
   notes       String?
@@ -176,12 +193,16 @@ model Event {
   channelId String?
   channel   Channel? @relation(fields: [channelId], references: [id])
 
+  discordChannelId String?
+  discordChannel   DiscordChannel? @relation(fields: [discordChannelId], references: [id])
+
   createdById String
   createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
 
-  assignments   Assignment[]
-  participants  EventParticipant[]
-  notifications Notification[]
+  assignments    Assignment[]
+  participants   EventParticipant[]
+  streamChannels EventStreamChannel[]
+  notifications  Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -214,6 +235,17 @@ model EventParticipant {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, participantId])
+  @@index([eventId])
+}
+
+model EventStreamChannel {
+  id              String        @id @default(cuid())
+  eventId         String
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  streamChannelId String
+  streamChannel   StreamChannel @relation(fields: [streamChannelId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, streamChannelId])
   @@index([eventId])
 }
 

@@ -12,6 +12,8 @@ export type Meta = {
   disciplines: { id: string; name: string; color: string }[];
   studios: { id: string; name: string; isAnalystStudio?: boolean }[];
   channels: { id: string; name: string }[];
+  discordChannels: { id: string; name: string }[];
+  streamChannels: { id: string; name: string }[];
   users: MetaUser[];
   participants: {
     main: { id: string; name: string; type: ParticipantType }[];
@@ -41,6 +43,8 @@ export type CalendarEvent = {
   discipline: { id: string; name: string; color: string };
   studio: { id: string; name: string } | null;
   channel: { id: string; name: string } | null;
+  discordChannel: { id: string; name: string } | null;
+  streamChannels: { id: string; name: string }[];
   createdBy: { id: string; username: string };
   assignments: EventAssignment[];
   participants: { id: string; name: string; type: ParticipantType }[];

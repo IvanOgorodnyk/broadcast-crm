@@ -9,11 +9,12 @@ export type Filters = {
   disciplineId: string[];
   studioId: string[];
   channelId: string[];
+  discordChannelId: string[];
+  streamChannelId: string[];
   setupType: string[];
   casterId: string[];
   analystId: string[];
   staffId: string[];
-  mediaId: string[];
   participantId: string[];
 };
 
@@ -21,11 +22,12 @@ export const emptyFilters: Filters = {
   disciplineId: [],
   studioId: [],
   channelId: [],
+  discordChannelId: [],
+  streamChannelId: [],
   setupType: [],
   casterId: [],
   analystId: [],
   staffId: [],
-  mediaId: [],
   participantId: [],
 };
 
@@ -65,12 +67,6 @@ export default function FilterPanel({
         onChange={set("disciplineId")}
       />
       <MultiSelect
-        label="Analyst Studio"
-        options={meta.studios.filter((s) => s.isAnalystStudio).map((s) => ({ value: s.id, label: s.name }))}
-        selected={filters.studioId}
-        onChange={set("studioId")}
-      />
-      <MultiSelect
         label="Studio"
         options={meta.studios.map((s) => ({ value: s.id, label: s.name }))}
         selected={filters.studioId}
@@ -83,16 +79,22 @@ export default function FilterPanel({
         onChange={set("setupType")}
       />
       <MultiSelect
-        label="Channel"
+        label="Broadcast channel"
         options={meta.channels.map((c) => ({ value: c.id, label: c.name }))}
         selected={filters.channelId}
         onChange={set("channelId")}
       />
       <MultiSelect
-        label="Main participants"
-        options={meta.participants.main.map((p) => ({ value: p.id, label: p.name }))}
-        selected={filters.participantId}
-        onChange={set("participantId")}
+        label="Discord channel"
+        options={meta.discordChannels.map((c) => ({ value: c.id, label: c.name }))}
+        selected={filters.discordChannelId}
+        onChange={set("discordChannelId")}
+      />
+      <MultiSelect
+        label="Streaming channel"
+        options={meta.streamChannels.map((c) => ({ value: c.id, label: c.name }))}
+        selected={filters.streamChannelId}
+        onChange={set("streamChannelId")}
       />
       <MultiSelect
         label="Media Representatives"
