@@ -2,7 +2,9 @@
 // Postgres datasource. Run: npx prisma db push && npm run db:seed
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" for local dev (Windows/macOS), rhel target for Vercel's Linux runtime.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
