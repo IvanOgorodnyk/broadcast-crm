@@ -13,10 +13,17 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
-  const user = await authenticate(parsed.data.email, parsed.data.password);
-  if (!user) {
-    return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+  try {
+    const user = await authenticate(parsed.data.email, parsed.data.password);
+    if (!user) {
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    }
+    await createSession(user);
+    return NextResponse.json({ ok: true, user });
+  } catch (err) {
+    // TEMPORARY diagnostic: surface the real runtime error to the client.
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[login] error:", message);
+    return NextResponse.json({ error: "Server error", detail: message }, { status: 500 });
   }
-  await createSession(user);
-  return NextResponse.json({ ok: true, user });
 }
