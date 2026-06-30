@@ -1,0 +1,241 @@
+// Broadcast CRM — Prisma schema
+// Postgres datasource. Run: npx prisma db push && npm run db:seed
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum SystemRole {
+  ADMIN // Admin / Producer — full control
+  STAFF // Staff member — sees own assignments
+  VIEWER // Read-only
+}
+
+enum AssignmentRole {
+  CASTER
+  ANALYST
+  DIRECTOR
+  PRODUCER
+  OBSERVER
+  REPLAY_OPERATOR
+  TECHNICAL_STAFF
+  MEDIA_REPRESENTATIVE
+  HOST
+  GUEST
+}
+
+enum EventStatus {
+  DRAFT
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  CHANGED
+}
+
+enum SetupType {
+  STUDIO
+  REMOTE
+  ON_SITE
+  HYBRID
+}
+
+enum ParticipantType {
+  MAIN // Main participant (team / org featured in the broadcast)
+  MEDIA // Media representative
+}
+
+enum NotificationType {
+  ASSIGNED
+  EVENT_UPDATED
+  EVENT_DELETED
+  TIME_CHANGED
+  STUDIO_CHANGED
+  STAFF_CHANGED
+  STATUS_CHANGED
+}
+
+// ---------------------------------------------------------------------------
+// Core entities
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String?
+  username     String
+  name         String?
+  surname      String?
+  avatarUrl    String?
+  role         SystemRole @default(STAFF)
+  active       Boolean    @default(true)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  // Disciplines this user works in (caster for CS, analyst for Dota, etc.)
+  disciplines Discipline[] @relation("UserDisciplines")
+
+  // Integrations
+  googleRefreshToken String?
+  googleConnectedAt  DateTime?
+  telegramChatId     String?
+  telegramLinkCode   String?   @unique
+
+  // Invitation flow
+  inviteToken     String?   @unique
+  inviteExpiresAt DateTime?
+
+  assignments          Assignment[]
+  createdEvents        Event[]        @relation("EventCreatedBy")
+  notifications        Notification[] @relation("NotificationRecipient")
+  triggeredNotificatns Notification[] @relation("NotificationActor")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Company {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+  createdAt DateTime @default(now())
+}
+
+model Discipline {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  color  String  @default("#9ca3af") // hex used for row color-coding
+  users  User[]  @relation("UserDisciplines")
+  events Event[]
+  createdAt DateTime @default(now())
+}
+
+model Studio {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  isAnalystStudio Boolean @default(false)
+  events Event[]
+  createdAt DateTime @default(now())
+}
+
+model Channel {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  events Event[]
+  createdAt DateTime @default(now())
+}
+
+model Participant {
+  id     String          @id @default(cuid())
+  name   String
+  type   ParticipantType
+  events EventParticipant[]
+  createdAt DateTime @default(now())
+
+  @@unique([name, type])
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  segment     String?
+  startsAt    DateTime
+  endsAt      DateTime
+  status      EventStatus @default(DRAFT)
+  setupType   SetupType   @default(STUDIO)
+  countryTag  String? // language / country tag, e.g. "EN", "UA"
+  streamLinks String? // newline-separated stream/channel links
+  notes       String?
+  internalComment String?
+  color       String? // optional override; defaults to discipline color
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+
+  studioId String?
+  studio   Studio? @relation(fields: [studioId], references: [id])
+
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
+
+  assignments   Assignment[]
+  participants  EventParticipant[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startsAt])
+  @@index([disciplineId])
+  @@index([studioId])
+}
+
+model Assignment {
+  id      String         @id @default(cuid())
+  eventId String
+  event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role    AssignmentRole
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId, role])
+  @@index([userId])
+  @@index([eventId])
+}
+
+model EventParticipant {
+  id            String      @id @default(cuid())
+  eventId       String
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, participantId])
+  @@index([eventId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id      String           @id @default(cuid())
+  type    NotificationType
+  message String // human-readable line shown in the notification center
+  read    Boolean          @default(false)
+
+  recipientId String
+  recipient   User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([recipientId, read])
+  @@index([createdAt])
+}

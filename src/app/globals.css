@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f7f6f3;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: #111827;
+}
+
+/* Calendar row left color bar uses --row-color set inline. */
+.row-bar {
+  box-shadow: inset 6px 0 0 0 var(--row-color, #9ca3af);
+}
+
+/* Thin scrollbars for the calendar area. */
+.scroll-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 9999px;
+}
