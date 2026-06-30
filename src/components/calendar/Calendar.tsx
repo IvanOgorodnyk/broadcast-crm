@@ -27,7 +27,7 @@ export default function Calendar({ canEdit }: { canEdit: boolean }) {
   const [showPicker, setShowPicker] = useState(false);
 
   // [from, to) window for the active view.
-  const window = useMemo(() => {
+  const range = useMemo(() => {
     if (view === "day") return { from: startOfDay(date), to: addDays(startOfDay(date), 1) };
     if (view === "week") {
       const from = startOfWeek(date, { weekStartsOn: 1 });
@@ -61,8 +61,8 @@ export default function Calendar({ canEdit }: { canEdit: boolean }) {
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("from", window.from.toISOString());
-    params.set("to", window.to.toISOString());
+    params.set("from", range.from.toISOString());
+    params.set("to", range.to.toISOString());
     (Object.keys(filters) as (keyof Filters)[]).forEach((key) => {
       filters[key].forEach((v) => params.append(key, v));
     });
@@ -70,7 +70,7 @@ export default function Calendar({ canEdit }: { canEdit: boolean }) {
     const data = await res.json();
     setEvents(data.events ?? []);
     setLoading(false);
-  }, [window, filters]);
+  }, [range, filters]);
 
   useEffect(() => {
     load();
