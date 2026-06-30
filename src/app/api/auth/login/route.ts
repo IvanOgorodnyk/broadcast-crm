@@ -21,9 +21,7 @@ export async function POST(req: Request) {
     await createSession(user);
     return NextResponse.json({ ok: true, user });
   } catch (err) {
-    // TEMPORARY diagnostic: surface the real runtime error to the client.
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[login] error:", message);
-    return NextResponse.json({ error: "Server error", detail: message }, { status: 500 });
+    console.error("[login] error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
