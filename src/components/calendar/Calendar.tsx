@@ -14,9 +14,9 @@ import FilterPanel, { emptyFilters, type Filters } from "./FilterPanel";
 import EventRow from "./EventRow";
 import EventModal from "./EventModal";
 import DatePicker from "./DatePicker";
-import type { CalendarEvent, CalendarView, Meta } from "@/types";
+import type { CalendarEvent, CalendarView, Meta, Viewer } from "@/types";
 
-export default function Calendar({ canEdit }: { canEdit: boolean }) {
+export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer: Viewer }) {
   const [date, setDate] = useState<Date>(() => startOfDay(new Date()));
   const [view, setView] = useState<CalendarView>("day");
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -221,6 +221,7 @@ export default function Calendar({ canEdit }: { canEdit: boolean }) {
           event={modal}
           meta={meta}
           canEdit={canEdit}
+          viewer={viewer}
           defaultDate={date}
           onClose={() => setModal(null)}
           onSaved={load}

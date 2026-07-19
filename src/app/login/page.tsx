@@ -81,6 +81,13 @@ export default function LoginPage() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
 
+        <p className="mt-6 text-center text-sm text-gray-500">
+          Staff member without an account?{" "}
+          <a href="/register" className="text-brand underline">
+            Sign up
+          </a>
+        </p>
+
         <p className="mt-8 text-center text-xs text-gray-400">
           Demo: admin@maincast.com / password123
         </p>

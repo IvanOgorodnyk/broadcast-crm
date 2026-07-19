@@ -33,6 +33,7 @@ enum AssignmentRole {
   MEDIA_REPRESENTATIVE
   HOST
   GUEST
+  SMM
 }
 
 enum EventStatus {
@@ -86,6 +87,10 @@ model User {
 
   // Disciplines this user works in (caster for CS, analyst for Dota, etc.)
   disciplines Discipline[] @relation("UserDisciplines")
+
+  // Staff positions this user can self-assign as (chosen at registration,
+  // editable in profile). E.g. [CASTER, ANALYST].
+  positions AssignmentRole[] @default([])
 
   // Integrations
   googleRefreshToken String?

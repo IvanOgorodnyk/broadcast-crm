@@ -1,4 +1,17 @@
-import type { AssignmentRole, EventStatus, SetupType, ParticipantType } from "@prisma/client";
+import type {
+  AssignmentRole,
+  EventStatus,
+  SetupType,
+  ParticipantType,
+  SystemRole,
+} from "@prisma/client";
+
+/** The signed-in user as seen by calendar components. */
+export type Viewer = {
+  id: string;
+  role: SystemRole;
+  positions: AssignmentRole[];
+};
 
 export type MetaUser = {
   id: string;

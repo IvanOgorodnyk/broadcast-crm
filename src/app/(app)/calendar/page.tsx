@@ -8,5 +8,10 @@ export default async function CalendarPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const canEdit = user.role === "ADMIN";
-  return <Calendar canEdit={canEdit} />;
+  return (
+    <Calendar
+      canEdit={canEdit}
+      viewer={{ id: user.id, role: user.role, positions: user.positions }}
+    />
+  );
 }

@@ -74,6 +74,7 @@ export const assignmentSchema = z.object({
     "MEDIA_REPRESENTATIVE",
     "HOST",
     "GUEST",
+    "SMM",
   ]),
 });
 

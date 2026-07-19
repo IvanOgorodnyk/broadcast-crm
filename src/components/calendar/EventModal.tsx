@@ -8,11 +8,12 @@ import {
   ASSIGNMENT_ROLE_LABEL,
   SETUP_LABEL,
   SETUP_TYPES,
+  STAFF_POSITION_LABEL,
   STATUS_LABEL,
   STATUSES,
   STATUS_COLOR,
 } from "@/lib/labels";
-import type { CalendarEvent, Meta } from "@/types";
+import type { CalendarEvent, Meta, Viewer } from "@/types";
 import type { AssignmentRole } from "@prisma/client";
 
 type Draft = {
@@ -99,6 +100,7 @@ export default function EventModal({
   event,
   meta,
   canEdit,
+  viewer,
   defaultDate,
   onClose,
   onSaved,
@@ -106,6 +108,7 @@ export default function EventModal({
   event: CalendarEvent | "new";
   meta: Meta;
   canEdit: boolean;
+  viewer: Viewer;
   defaultDate: Date;
   onClose: () => void;
   onSaved: () => void;
@@ -115,6 +118,8 @@ export default function EventModal({
   const [draft, setDraft] = useState<Draft>(
     isNew ? emptyDraft(meta, defaultDate) : fromEvent(event)
   );
+  // Live copy of the event for the read view (updated after join/leave).
+  const [current, setCurrent] = useState<CalendarEvent | null>(isNew ? null : event);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -203,7 +208,17 @@ export default function EventModal({
             error={error}
           />
         ) : (
-          <ReadView event={event as CalendarEvent} />
+          current && (
+            <ReadView
+              event={current}
+              viewer={viewer}
+              canEdit={canEdit}
+              onChanged={(e) => {
+                setCurrent(e);
+                onSaved();
+              }}
+            />
+          )
         )}
 
         {editing && (
@@ -476,7 +491,17 @@ function EditForm({
   );
 }
 
-function ReadView({ event }: { event: CalendarEvent }) {
+function ReadView({
+  event,
+  viewer,
+  canEdit,
+  onChanged,
+}: {
+  event: CalendarEvent;
+  viewer: Viewer;
+  canEdit: boolean;
+  onChanged: (e: CalendarEvent) => void;
+}) {
   return (
     <div className="max-h-[70vh] space-y-4 overflow-auto px-5 py-4 scroll-thin">
       <div className="flex items-center gap-2">
@@ -515,10 +540,15 @@ function ReadView({ event }: { event: CalendarEvent }) {
               <Avatar name={a.user.name} surname={a.user.surname} username={a.user.username} avatarUrl={a.user.avatarUrl} size={24} />
               <span className="font-medium">{displayName(a.user)}</span>
               <span className="text-gray-400">— {ASSIGNMENT_ROLE_LABEL[a.role]}</span>
+              {a.user.id === viewer.id && <span className="text-xs text-brand">(you)</span>}
             </div>
           ))}
         </div>
       </div>
+
+      {!canEdit && viewer.role === "STAFF" && (
+        <SelfAssign event={event} viewer={viewer} onChanged={onChanged} />
+      )}
 
       {event.participants.length > 0 && (
         <Info
@@ -538,6 +568,116 @@ function ReadView({ event }: { event: CalendarEvent }) {
       )}
       {event.notes && <Info label="Notes" value={event.notes} />}
       {event.internalComment && <Info label="Internal comment" value={event.internalComment} />}
+    </div>
+  );
+}
+
+/** Staff self-assignment: join the event in one of your positions, or leave it. */
+function SelfAssign({
+  event,
+  viewer,
+  onChanged,
+}: {
+  event: CalendarEvent;
+  viewer: Viewer;
+  onChanged: (e: CalendarEvent) => void;
+}) {
+  const mine = event.assignments.filter((a) => a.user.id === viewer.id);
+  const availableRoles = viewer.positions.filter(
+    (p) => !mine.some((a) => a.role === p)
+  );
+  const [role, setRole] = useState<AssignmentRole | "">(availableRoles[0] ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function join() {
+    if (!role) return;
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/events/${event.id}/self-assign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    setBusy(false);
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      onChanged(data.event);
+      const left = viewer.positions.filter(
+        (p) => p !== role && !mine.some((a) => a.role === p)
+      );
+      setRole(left[0] ?? "");
+    } else {
+      setError(data.error ?? "Failed to join");
+    }
+  }
+
+  async function leave(r: AssignmentRole) {
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/events/${event.id}/self-assign?role=${r}`, {
+      method: "DELETE",
+    });
+    setBusy(false);
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      onChanged(data.event);
+      if (!role) setRole(r);
+    } else {
+      setError(data.error ?? "Failed to leave");
+    }
+  }
+
+  if (viewer.positions.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-gray-100 bg-gray-50 px-4 py-3">
+      <p className="mb-2 text-xs font-semibold uppercase text-gray-500">My participation</p>
+
+      {mine.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {mine.map((a) => (
+            <div key={a.id} className="flex items-center justify-between text-sm">
+              <span>
+                You are on this event as{" "}
+                <span className="font-medium">{ASSIGNMENT_ROLE_LABEL[a.role]}</span>
+              </span>
+              <button
+                onClick={() => leave(a.role)}
+                disabled={busy}
+                className="text-sm font-medium text-brand hover:underline disabled:opacity-60"
+              >
+                Leave
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {availableRoles.length > 0 && (
+        <div className="flex items-center gap-2">
+          <select
+            className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
+            value={role}
+            onChange={(e) => setRole(e.target.value as AssignmentRole)}
+          >
+            {availableRoles.map((r) => (
+              <option key={r} value={r}>
+                {STAFF_POSITION_LABEL[r] ?? ASSIGNMENT_ROLE_LABEL[r]}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={join}
+            disabled={busy || !role}
+            className="rounded-md bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:opacity-60"
+          >
+            {busy ? "…" : "Join"}
+          </button>
+        </div>
+      )}
+
+      {error && <p className="mt-2 text-sm text-brand">{error}</p>}
     </div>
   );
 }

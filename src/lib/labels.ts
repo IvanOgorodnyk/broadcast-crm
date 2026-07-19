@@ -11,6 +11,7 @@ export const ASSIGNMENT_ROLE_LABEL: Record<AssignmentRole, string> = {
   MEDIA_REPRESENTATIVE: "Media representative",
   HOST: "Host",
   GUEST: "Guest",
+  SMM: "SMM specialist",
 };
 
 export const ASSIGNMENT_ROLES: AssignmentRole[] = [
@@ -24,7 +25,18 @@ export const ASSIGNMENT_ROLES: AssignmentRole[] = [
   "MEDIA_REPRESENTATIVE",
   "HOST",
   "GUEST",
+  "SMM",
 ];
+
+// Positions staff can pick at registration and self-assign to events as.
+export const STAFF_POSITIONS: AssignmentRole[] = ["CASTER", "ANALYST", "DIRECTOR", "SMM"];
+
+export const STAFF_POSITION_LABEL: Record<string, string> = {
+  CASTER: "Commentator (caster)",
+  ANALYST: "Analyst",
+  DIRECTOR: "Stream director",
+  SMM: "SMM specialist",
+};
 
 export const STATUS_LABEL: Record<EventStatus, string> = {
   DRAFT: "Draft",

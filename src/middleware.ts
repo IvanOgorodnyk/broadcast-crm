@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 const COOKIE_NAME = "bcrm_session";
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/invite"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password", "/invite"];
 
 function secret() {
   return new TextEncoder().encode(process.env.AUTH_SECRET ?? "");
