@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/guards";
 import { eventInclude, serializeEvent, eventInputSchema, type EventWithRelations } from "@/lib/events";
 import { notify } from "@/lib/notifications";
-import { syncEventToGoogle, deleteEventFromGoogle } from "@/lib/integrations/google";
+import {
+  syncEventToGoogle,
+  deleteEventFromGoogle,
+  syncEventWithInvites,
+  cancelEventInvites,
+} from "@/lib/integrations/google";
 import type { NotificationType } from "@prisma/client";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -138,8 +143,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     });
   }
 
-  // Google sync: upsert for current assignees, delete for removed ones.
-  await syncGoogle(updated, removedUsers);
+  // Google Calendar: update the organizer-calendar event (attendees added or
+  // removed get emailed); fall back to silent per-user sync if unavailable.
+  const invited = await syncEventWithInvites(updated);
+  if (!invited) await syncGoogle(updated, removedUsers);
 
   return NextResponse.json({ event: serializeEvent(updated) });
 }
@@ -159,14 +166,18 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
 
   const recipientIds = existing.assignments.map((a) => a.userId);
 
-  // Remove from connected Google calendars before deleting.
-  const users = await prisma.user.findMany({
-    where: { id: { in: recipientIds }, googleRefreshToken: { not: null } },
-    select: { googleRefreshToken: true },
-  });
-  await Promise.allSettled(
-    users.map((u) => deleteEventFromGoogle(u.googleRefreshToken!, existing.id))
-  );
+  // Google Calendar: cancel the organizer event (attendees get a cancellation
+  // email); fall back to removing it from each connected user's own calendar.
+  const cancelled = await cancelEventInvites(existing);
+  if (!cancelled) {
+    const users = await prisma.user.findMany({
+      where: { id: { in: recipientIds }, googleRefreshToken: { not: null } },
+      select: { googleRefreshToken: true },
+    });
+    await Promise.allSettled(
+      users.map((u) => deleteEventFromGoogle(u.googleRefreshToken!, existing.id))
+    );
+  }
 
   await prisma.event.delete({ where: { id: params.id } });
 

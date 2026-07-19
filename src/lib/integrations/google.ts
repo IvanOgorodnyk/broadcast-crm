@@ -13,6 +13,8 @@
  */
 
 import type { Event, AssignmentRole } from "@prisma/client";
+import { prisma } from "../prisma";
+import type { EventWithRelations } from "../events";
 
 export function googleEnabled() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -121,6 +123,118 @@ export async function syncEventToGoogle(ctx: SyncContext) {
     }
   } catch (err) {
     console.error("[google] syncEvent failed", err);
+  }
+}
+
+/** Stable Google event id derived from the CRM event id. */
+function googleEventId(eventId: string) {
+  return `bcrm${eventId.replace(/[^a-z0-9]/gi, "").toLowerCase()}`;
+}
+
+/**
+ * Find a connected "organizer" Google account for an event: the event creator
+ * if they connected Google Calendar, otherwise any connected active admin.
+ */
+async function findOrganizerToken(createdById: string): Promise<string | null> {
+  const creator = await prisma.user.findFirst({
+    where: { id: createdById, googleRefreshToken: { not: null } },
+    select: { googleRefreshToken: true },
+  });
+  if (creator?.googleRefreshToken) return creator.googleRefreshToken;
+  const admin = await prisma.user.findFirst({
+    where: { role: "ADMIN", active: true, googleRefreshToken: { not: null } },
+    orderBy: { googleConnectedAt: "asc" },
+    select: { googleRefreshToken: true },
+  });
+  return admin?.googleRefreshToken ?? null;
+}
+
+/**
+ * Upsert the event on the organizer's calendar with every assigned member as
+ * an attendee. `sendUpdates=all` makes Google email invitations immediately —
+ * assignees get notified even if they never connected anything themselves.
+ *
+ * Returns true when the organizer sync happened; false when it isn't possible
+ * (integration disabled / no connected admin) so callers can fall back to the
+ * silent per-user sync.
+ */
+export async function syncEventWithInvites(event: EventWithRelations): Promise<boolean> {
+  if (!googleEnabled()) return false;
+  const refreshToken = await findOrganizerToken(event.createdById);
+  if (!refreshToken) return false;
+
+  try {
+    const users = await prisma.user.findMany({
+      where: { id: { in: event.assignments.map((a) => a.userId) }, active: true },
+      select: { id: true, email: true },
+    });
+    const emailById = new Map(users.map((u) => [u.id, u.email]));
+
+    const staffLines = event.assignments
+      .filter((a) => emailById.has(a.userId))
+      .map((a) => `${a.user.username} — ${a.role}`);
+    const description = [
+      event.segment ? `Segment: ${event.segment}` : null,
+      event.studio ? `Studio: ${event.studio.name}` : null,
+      event.channel ? `Channel: ${event.channel.name}` : null,
+      staffLines.length ? `Staff:\n${staffLines.join("\n")}` : null,
+      event.notes ? `Notes: ${event.notes}` : null,
+      `${process.env.APP_URL ?? ""}/calendar?event=${event.id}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const token = await accessTokenFromRefresh(refreshToken);
+    const body = {
+      id: googleEventId(event.id),
+      summary: event.title,
+      description,
+      start: { dateTime: event.startsAt.toISOString() },
+      end: { dateTime: event.endsAt.toISOString() },
+      attendees: [...emailById.values()].map((email) => ({ email })),
+    };
+
+    const base = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+    const updateRes = await fetch(`${base}/${body.id}?sendUpdates=all`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (updateRes.status === 404) {
+      const insertRes = await fetch(`${base}?sendUpdates=all`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!insertRes.ok) throw new Error(`insert failed: ${insertRes.status}`);
+    } else if (!updateRes.ok) {
+      throw new Error(`update failed: ${updateRes.status}`);
+    }
+    return true;
+  } catch (err) {
+    console.error("[google] syncEventWithInvites failed", err);
+    return false;
+  }
+}
+
+/**
+ * Cancel the organizer-calendar event; attendees get a cancellation email.
+ * Returns true when handled, false when organizer sync isn't available.
+ */
+export async function cancelEventInvites(event: { id: string; createdById: string }): Promise<boolean> {
+  if (!googleEnabled()) return false;
+  const refreshToken = await findOrganizerToken(event.createdById);
+  if (!refreshToken) return false;
+  try {
+    const token = await accessTokenFromRefresh(refreshToken);
+    await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId(event.id)}?sendUpdates=all`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+    );
+    return true;
+  } catch (err) {
+    console.error("[google] cancelEventInvites failed", err);
+    return false;
   }
 }
 

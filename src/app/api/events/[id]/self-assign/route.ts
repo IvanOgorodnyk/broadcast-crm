@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/guards";
 import { eventInclude, serializeEvent } from "@/lib/events";
 import { notify } from "@/lib/notifications";
-import { syncEventToGoogle, deleteEventFromGoogle } from "@/lib/integrations/google";
+import {
+  syncEventToGoogle,
+  deleteEventFromGoogle,
+  syncEventWithInvites,
+} from "@/lib/integrations/google";
 import type { AssignmentRole } from "@prisma/client";
 
 const SELF_ASSIGNABLE: AssignmentRole[] = ["CASTER", "ANALYST", "DIRECTOR", "SMM"];
@@ -60,8 +64,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     message: `${me.username} joined "${event.title}" as ${role.toLowerCase()}`,
   });
 
-  // Sync to the joining user's Google calendar if connected (best-effort).
-  if (me.googleRefreshToken) {
+  // Google Calendar: add them as an attendee on the organizer event (they get
+  // an email invite); fall back to syncing their own connected calendar.
+  const invited = await syncEventWithInvites(updated);
+  if (!invited && me.googleRefreshToken) {
     await Promise.allSettled([
       syncEventToGoogle({ refreshToken: me.googleRefreshToken, event: updated, role }),
     ]);
@@ -109,9 +115,12 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     message: `${auth.user.username} left "${event.title}"`,
   });
 
-  // If they no longer hold any role on this event, drop it from their Google calendar.
+  // Google Calendar: drop them from the organizer event's attendee list; if
+  // organizer sync isn't available and they left entirely, remove the event
+  // from their own connected calendar.
+  const synced = await syncEventWithInvites(updated);
   const stillAssigned = updated.assignments.some((a) => a.userId === auth.user.id);
-  if (!stillAssigned) {
+  if (!synced && !stillAssigned) {
     const me = await prisma.user.findUnique({
       where: { id: auth.user.id },
       select: { googleRefreshToken: true },

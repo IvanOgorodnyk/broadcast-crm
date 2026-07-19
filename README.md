@@ -111,7 +111,13 @@ src/
 1. Create OAuth credentials (Web app) in Google Cloud Console.
 2. Add redirect URI `${APP_URL}/api/integrations/google/callback`.
 3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
-4. Users click **Connect** on their profile.
+4. An **admin** clicks **Connect** on their profile. From then on every event is
+   mirrored to that admin's Google Calendar with all assigned staff as
+   attendees — Google emails each person an invitation the moment an admin
+   assigns them (or they self-assign), and sends update/cancellation emails on
+   changes. Staff don't need to connect anything to get these emails.
+5. Staff can still click **Connect** themselves; that per-user sync is the
+   fallback used when no admin account is connected (silent, no emails).
 
 ### Telegram
 1. Create a bot via @BotFather, set `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME`.

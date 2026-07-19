@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/guards";
 import { eventInclude, serializeEvent, eventInputSchema, type EventWithRelations } from "@/lib/events";
 import { notify } from "@/lib/notifications";
-import { syncEventToGoogle } from "@/lib/integrations/google";
+import { syncEventToGoogle, syncEventWithInvites } from "@/lib/integrations/google";
 
 /**
  * GET /api/events?from=ISO&to=ISO&disciplineId=...&studioId=...&channelId=...
@@ -136,8 +136,10 @@ export async function POST(req: Request) {
     telegramText: assignedTelegramText(event),
   });
 
-  // Best-effort Google Calendar sync per assignee.
-  await syncGoogleForAssignees(event);
+  // Google Calendar: invite assignees from the organizer's calendar (emails
+  // them immediately); fall back to silent per-user sync if no admin connected.
+  const invited = await syncEventWithInvites(event);
+  if (!invited) await syncGoogleForAssignees(event);
 
   return NextResponse.json({ event: serializeEvent(event) }, { status: 201 });
 }
