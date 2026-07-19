@@ -13,3 +13,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /prisma/dev.db
+
+# Source logo asset (original upload; the app uses the cropped public/logo.png)
+public/лого прозрач.png

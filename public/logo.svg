@@ -1,6 +1,0 @@
-<svg width="64" height="48" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OBLOGA">
-  <!-- Placeholder OBLOGA mark: blue chevron + yellow base (Ukrainian palette).
-       Replace public/logo.svg (or add public/logo.png and update Logo.tsx) with the real asset. -->
-  <path d="M20 6 H52 L36 24 H52 L20 42 L34 26 H18 Z" fill="#16a3e0"/>
-  <path d="M14 40 H46 L42 46 H10 Z" fill="#ece84f"/>
-</svg>

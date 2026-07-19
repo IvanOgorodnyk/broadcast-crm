@@ -12,12 +12,13 @@ function secret() {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow public pages, Next internals, API routes (they guard themselves), assets.
+  // Allow public pages, Next internals, API routes (they guard themselves),
+  // and static assets from /public (anything with a file extension).
   if (
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico"
+    /\.[a-zA-Z0-9]+$/.test(pathname)
   ) {
     return NextResponse.next();
   }
