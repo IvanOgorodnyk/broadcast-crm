@@ -87,10 +87,6 @@ export default function LoginPage() {
             Sign up
           </a>
         </p>
-
-        <p className="mt-8 text-center text-xs text-gray-400">
-          Demo: admin@maincast.com / password123
-        </p>
       </form>
     </div>
   );
