@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Avatar from "./Avatar";
+import AvatarCropModal from "./AvatarCropModal";
 
 type ProfileUser = {
   id: string;
@@ -35,6 +36,10 @@ export default function ProfileForm({
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl ?? "");
   const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // avatar upload + crop
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   // password
   const [showPwd, setShowPwd] = useState(false);
@@ -73,6 +78,28 @@ export default function ProfileForm({
     }
   }
 
+  function pickAvatarFile(file: File | undefined | null) {
+    if (!file || !file.type.startsWith("image/")) return;
+    setCropSrc(URL.createObjectURL(file));
+  }
+
+  async function applyCroppedAvatar(dataUrl: string) {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+    setAvatarUrl(dataUrl);
+    // Persist immediately so the new avatar shows everywhere without an extra step.
+    setSaving(true);
+    setMsg(null);
+    const res = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatarUrl: dataUrl }),
+    });
+    setSaving(false);
+    setMsg(res.ok ? "Avatar updated" : "Failed to save avatar");
+    if (res.ok) router.refresh();
+  }
+
   async function connectTelegram() {
     const res = await fetch("/api/integrations/telegram/link", { method: "POST" });
     const data = await res.json();
@@ -86,13 +113,30 @@ export default function ProfileForm({
 
       {/* Avatar + identity */}
       <section className="flex items-start gap-6">
-        <div className="text-center">
+        <div className="flex flex-col items-center gap-2">
           <Avatar name={name} surname={surname} username={username} avatarUrl={avatarUrl} size={96} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              pickAvatarFile(e.target.files?.[0]);
+              e.target.value = ""; // allow re-picking the same file
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+          >
+            Upload photo
+          </button>
         </div>
         <div className="flex-1 space-y-4">
           <div>
             <label className="mb-1 block text-sm font-semibold">Avatar URL</label>
-            <input className={inputCls} value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" />
+            <input className={inputCls} value={avatarUrl.startsWith("data:") ? "(uploaded photo)" : avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" />
           </div>
           <div>
             <label className="mb-1 block text-sm font-semibold">Username</label>
@@ -247,6 +291,17 @@ export default function ProfileForm({
           </button>
         </div>
       </section>
+
+      {cropSrc && (
+        <AvatarCropModal
+          src={cropSrc}
+          onCancel={() => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+          }}
+          onSave={applyCroppedAvatar}
+        />
+      )}
     </div>
   );
 }

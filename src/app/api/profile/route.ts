@@ -8,7 +8,9 @@ const schema = z.object({
   username: z.string().min(1).optional(),
   name: z.string().optional().nullable(),
   surname: z.string().optional().nullable(),
-  avatarUrl: z.string().url().optional().nullable().or(z.literal("")),
+  // Accepts https:// links and data: URLs from the avatar upload/crop flow;
+  // capped so nobody stores a multi-megabyte original in the row.
+  avatarUrl: z.string().url().max(500_000).optional().nullable().or(z.literal("")),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6).optional(),
 });
