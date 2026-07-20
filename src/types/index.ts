@@ -1,6 +1,7 @@
 import type {
   AssignmentRole,
   EventStatus,
+  MatchFormat,
   SetupType,
   ParticipantType,
   SystemRole,
@@ -48,6 +49,7 @@ export type CalendarEvent = {
   endsAt: string;
   status: EventStatus;
   setupType: SetupType;
+  matchFormat: MatchFormat | null;
   countryTag: string | null;
   streamLinks: string | null;
   notes: string | null;

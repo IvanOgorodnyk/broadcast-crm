@@ -52,6 +52,12 @@ enum SetupType {
   HYBRID
 }
 
+enum MatchFormat {
+  BO1
+  BO3
+  BO5
+}
+
 enum ParticipantType {
   MAIN // Main participant (team / org featured in the broadcast)
   MEDIA // Media representative
@@ -183,6 +189,12 @@ model Event {
   endsAt      DateTime
   status      EventStatus @default(DRAFT)
   setupType   SetupType   @default(REMOTE)
+  matchFormat MatchFormat? // BO1 / BO3 / BO5
+
+  // Telegram reminder bookkeeping (set once sent, so the daily cron
+  // never double-sends).
+  dayBeforeReminderAt DateTime?
+  dayOfReminderAt     DateTime?
   countryTag  String? // language / country tag, e.g. "EN", "UA"
   streamLinks String? // newline-separated stream/channel links
   notes       String?

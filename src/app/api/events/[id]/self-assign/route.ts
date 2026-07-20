@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/guards";
 import { eventInclude, serializeEvent } from "@/lib/events";
 import { notify } from "@/lib/notifications";
+import { buildCastMessage, sendTelegramMessage } from "@/lib/integrations/telegram";
 import {
   syncEventToGoogle,
   deleteEventFromGoogle,
@@ -63,6 +64,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     type: "STAFF_CHANGED",
     message: `${me.username} joined "${event.title}" as ${role.toLowerCase()}`,
   });
+
+  // Confirmation card straight to the joiner's Telegram (notify() skips the actor).
+  if (me.telegramChatId) {
+    await sendTelegramMessage(
+      me.telegramChatId,
+      buildCastMessage(updated, "✅ <b>You joined this cast</b>")
+    );
+  }
 
   // Google Calendar: add them as an attendee on the organizer event (they get
   // an email invite); fall back to syncing their own connected calendar.

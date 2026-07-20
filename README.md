@@ -125,6 +125,13 @@ src/
    `https://api.telegram.org/bot<TOKEN>/setWebhook?url=<APP_URL>/api/integrations/telegram/webhook`
 3. Users click **Connect Telegram Bot** and send `/start <code>` to the bot.
 
+Connected users receive the formatted cast card (tournament, match, time,
+BO-format, staff line-up, setup, channels):
+- when an admin assigns them (event create/edit) and when they self-assign;
+- as reminders **the day before** and **on the day of** the cast — sent by the
+  daily Vercel Cron job (`vercel.json` → `/api/cron/reminders`, 06:00 UTC).
+  Set `CRON_SECRET` in the environment so only Vercel can trigger it.
+
 ---
 
 ## Deployment

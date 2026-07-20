@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/guards";
 import { eventInclude, serializeEvent, eventInputSchema, type EventWithRelations } from "@/lib/events";
 import { notify } from "@/lib/notifications";
 import { syncEventToGoogle, syncEventWithInvites } from "@/lib/integrations/google";
+import { buildCastMessage } from "@/lib/integrations/telegram";
 
 /**
  * GET /api/events?from=ISO&to=ISO&disciplineId=...&studioId=...&channelId=...
@@ -108,6 +109,7 @@ export async function POST(req: Request) {
       endsAt: new Date(data.endsAt),
       status: data.status,
       setupType: data.setupType,
+      matchFormat: data.matchFormat || null,
       countryTag: data.countryTag || null,
       streamLinks: data.streamLinks || null,
       notes: data.notes || null,
@@ -133,7 +135,7 @@ export async function POST(req: Request) {
     eventId: event.id,
     type: "ASSIGNED",
     message: `${auth.user.username} assigned you to "${event.title}"`,
-    telegramText: assignedTelegramText(event),
+    telegramText: buildCastMessage(event, "📌 <b>You've been assigned to a cast</b>"),
   });
 
   // Google Calendar: invite assignees from the organizer's calendar (emails
@@ -142,19 +144,6 @@ export async function POST(req: Request) {
   if (!invited) await syncGoogleForAssignees(event);
 
   return NextResponse.json({ event: serializeEvent(event) }, { status: 201 });
-}
-
-function assignedTelegramText(event: EventWithRelations) {
-  return [
-    "<b>You have been assigned to a broadcast</b>",
-    `Event: ${event.title}`,
-    event.segment ? `Segment: ${event.segment}` : null,
-    `Time: ${event.startsAt.toISOString()} – ${event.endsAt.toISOString()}`,
-    event.studio ? `Studio: ${event.studio.name}` : null,
-    event.channel ? `Channel: ${event.channel.name}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 
 async function syncGoogleForAssignees(event: EventWithRelations) {

@@ -24,6 +24,7 @@ type Draft = {
   endsAt: string;
   status: string;
   setupType: string;
+  matchFormat: string;
   countryTag: string;
   disciplineId: string;
   studioId: string;
@@ -57,6 +58,7 @@ function emptyDraft(meta: Meta, defaultDate: Date): Draft {
     endsAt: toLocalInput(end.toISOString()),
     status: "DRAFT",
     setupType: "STUDIO",
+    matchFormat: "",
     countryTag: "",
     disciplineId: meta.disciplines[0]?.id ?? "",
     studioId: "",
@@ -81,6 +83,7 @@ function fromEvent(e: CalendarEvent): Draft {
     endsAt: toLocalInput(e.endsAt),
     status: e.status,
     setupType: e.setupType,
+    matchFormat: e.matchFormat ?? "",
     countryTag: e.countryTag ?? "",
     disciplineId: e.discipline.id,
     studioId: e.studio?.id ?? "",
@@ -135,6 +138,7 @@ export default function EventModal({
       endsAt: draft.endsAt,
       status: draft.status,
       setupType: draft.setupType,
+      matchFormat: draft.matchFormat || null,
       countryTag: draft.countryTag,
       disciplineId: draft.disciplineId,
       studioId: draft.studioId || null,
@@ -393,11 +397,19 @@ function EditForm({
         </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Field label="Status">
           <select className={inputCls} value={draft.status} onChange={(e) => set("status", e.target.value)}>
             {STATUSES.map((s) => (
               <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Match format">
+          <select className={inputCls} value={draft.matchFormat} onChange={(e) => set("matchFormat", e.target.value)}>
+            <option value="">—</option>
+            {["BO1", "BO3", "BO5"].map((f) => (
+              <option key={f} value={f}>{f}</option>
             ))}
           </select>
         </Field>
@@ -521,6 +533,7 @@ function ReadView({
       <dl className="grid grid-cols-2 gap-3 text-sm">
         <Info label="Time" value={`${hhmm(event.startsAt)} – ${hhmm(event.endsAt)}`} />
         <Info label="Setup" value={SETUP_LABEL[event.setupType]} />
+        <Info label="Match format" value={event.matchFormat ?? "—"} />
         <Info label="Studio" value={event.studio?.name ?? "—"} />
         <Info label="Broadcast channel" value={event.channel?.name ?? "—"} />
         <Info label="Discord channel" value={event.discordChannel?.name ?? "—"} />

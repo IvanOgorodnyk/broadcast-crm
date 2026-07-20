@@ -9,6 +9,7 @@ import {
   syncEventWithInvites,
   cancelEventInvites,
 } from "@/lib/integrations/google";
+import { buildCastMessage } from "@/lib/integrations/telegram";
 import type { NotificationType } from "@prisma/client";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -56,6 +57,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       endsAt: new Date(data.endsAt),
       status: data.status,
       setupType: data.setupType,
+      matchFormat: data.matchFormat || null,
       countryTag: data.countryTag || null,
       streamLinks: data.streamLinks || null,
       notes: data.notes || null,
@@ -103,6 +105,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       eventId: updated.id,
       type: "ASSIGNED",
       message: `${auth.user.username} assigned you to "${updated.title}"`,
+      telegramText: buildCastMessage(updated, "📌 <b>You've been assigned to a cast</b>"),
     });
   }
 
