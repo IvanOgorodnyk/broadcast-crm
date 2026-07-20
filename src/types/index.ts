@@ -55,7 +55,7 @@ export type CalendarEvent = {
   notes: string | null;
   internalComment: string | null;
   color: string;
-  discipline: { id: string; name: string; color: string };
+  discipline: { id: string; name: string; color: string; logoUrl?: string | null };
   studio: { id: string; name: string } | null;
   channel: { id: string; name: string } | null;
   discordChannel: { id: string; name: string } | null;

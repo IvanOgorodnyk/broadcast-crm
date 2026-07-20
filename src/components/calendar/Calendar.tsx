@@ -11,7 +11,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import FilterPanel, { emptyFilters, type Filters } from "./FilterPanel";
-import EventRow from "./EventRow";
+import EventRow, { GAME_COLS } from "./EventRow";
 import EventModal from "./EventModal";
 import DatePicker from "./DatePicker";
 import type { CalendarEvent, CalendarView, Meta, Viewer } from "@/types";
@@ -75,6 +75,23 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
   useEffect(() => {
     load();
   }, [load]);
+
+  // Group same-tournament games (same title + discipline) into one visual row.
+  const byTournament = useCallback((list: CalendarEvent[]) => {
+    const groups: CalendarEvent[][] = [];
+    const index = new Map<string, number>();
+    for (const e of list) {
+      const key = `${e.title}|${e.discipline.id}`;
+      const i = index.get(key);
+      if (i === undefined) {
+        index.set(key, groups.length);
+        groups.push([e]);
+      } else {
+        groups[i].push(e);
+      }
+    }
+    return groups;
+  }, []);
 
   // Group events by calendar day (for week/month agenda views).
   const grouped = useMemo(() => {
@@ -161,18 +178,24 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
           )}
         </div>
 
+        {/* Wide grid scrolls horizontally on narrow screens. */}
+        <div className="overflow-x-auto scroll-thin">
+        <div className="min-w-[1080px]">
+
         {/* Column header (day view) */}
         {view === "day" && events.length > 0 && (
-          <div className="mb-1 grid grid-cols-[120px_1.6fr_90px_1.4fr_110px_1.6fr_1.4fr_100px_1.2fr] gap-2 px-3 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-            <span>Discipline</span>
-            <span>Event</span>
-            <span>Time</span>
-            <span>Segment</span>
-            <span>Studio</span>
-            <span>Casters & Analysts</span>
-            <span>Staff</span>
-            <span>Channel</span>
-            <span>SMM</span>
+          <div className="mb-1 flex gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            <span className="w-24 shrink-0 px-1">Discipline</span>
+            <span className="w-56 shrink-0 px-1">Event</span>
+            <div className={`grid ${GAME_COLS} min-w-0 flex-1 gap-1.5`}>
+              <span className="pl-1">Time</span>
+              <span>Games</span>
+              <span>Setup</span>
+              <span>Casters & Analysts</span>
+              <span>Directors</span>
+              <span>SMM</span>
+              <span>Channels</span>
+            </div>
           </div>
         )}
 
@@ -189,11 +212,11 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
           </div>
         )}
 
-        {/* Day view: flat list. Week/Month: grouped by day. */}
+        {/* Day view: tournament groups. Week/Month: grouped by day, then tournament. */}
         {!loading && view === "day" && (
-          <div className="space-y-1.5">
-            {events.map((e) => (
-              <EventRow key={e.id} event={e} onClick={() => setModal(e)} />
+          <div className="space-y-2">
+            {byTournament(events).map((group) => (
+              <EventRow key={group[0].id} events={group} onOpen={setModal} />
             ))}
           </div>
         )}
@@ -205,15 +228,18 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
                 <h3 className="mb-1.5 text-sm font-bold text-gray-700">
                   {format(new Date(day), "EEEE, d MMMM")}
                 </h3>
-                <div className="space-y-1.5">
-                  {dayEvents.map((e) => (
-                    <EventRow key={e.id} event={e} onClick={() => setModal(e)} />
+                <div className="space-y-2">
+                  {byTournament(dayEvents).map((group) => (
+                    <EventRow key={group[0].id} events={group} onOpen={setModal} />
                   ))}
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        </div>
+        </div>
       </div>
 
       {modal && meta && (

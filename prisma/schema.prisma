@@ -127,9 +127,10 @@ model Company {
 }
 
 model Discipline {
-  id     String  @id @default(cuid())
-  name   String  @unique
-  color  String  @default("#9ca3af") // hex used for row color-coding
+  id      String  @id @default(cuid())
+  name    String  @unique
+  color   String  @default("#9ca3af") // hex used for row color-coding
+  logoUrl String? // shown in the calendar's Discipline column (falls back to name)
   users  User[]  @relation("UserDisciplines")
   events Event[]
   createdAt DateTime @default(now())

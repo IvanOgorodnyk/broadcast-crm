@@ -36,7 +36,12 @@ export function serializeEvent(e: EventWithRelations) {
     notes: e.notes,
     internalComment: e.internalComment,
     color: e.color ?? e.discipline.color,
-    discipline: { id: e.discipline.id, name: e.discipline.name, color: e.discipline.color },
+    discipline: {
+      id: e.discipline.id,
+      name: e.discipline.name,
+      color: e.discipline.color,
+      logoUrl: e.discipline.logoUrl,
+    },
     studio: e.studio ? { id: e.studio.id, name: e.studio.name } : null,
     channel: e.channel ? { id: e.channel.id, name: e.channel.name } : null,
     discordChannel: e.discordChannel
