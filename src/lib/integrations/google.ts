@@ -12,6 +12,7 @@
  *  4. On event create/update/delete we upsert/delete the user's calendar event
  */
 
+import { createHash } from "crypto";
 import type { Event, AssignmentRole } from "@prisma/client";
 import { prisma } from "../prisma";
 import type { EventWithRelations } from "../events";
@@ -126,9 +127,13 @@ export async function syncEventToGoogle(ctx: SyncContext) {
   }
 }
 
-/** Stable Google event id derived from the CRM event id. */
+/**
+ * Stable Google event id derived from the CRM event id. Google only allows
+ * base32hex characters (a-v, 0-9), so a hex digest is used — cuids contain
+ * letters like w-z that Google rejects with a 400.
+ */
 function googleEventId(eventId: string) {
-  return `bcrm${eventId.replace(/[^a-z0-9]/gi, "").toLowerCase()}`;
+  return `bcrm${createHash("sha1").update(eventId).digest("hex")}`;
 }
 
 /**
