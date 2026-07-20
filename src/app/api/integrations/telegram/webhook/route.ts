@@ -9,6 +9,13 @@ import { sendTelegramMessage } from "@/lib/integrations/telegram";
  * Handles `/start <code>` to link a chat to a CRM user.
  */
 export async function POST(req: Request) {
+  // Telegram echoes the secret_token passed to setWebhook in this header;
+  // reject spoofed updates when the secret is configured.
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (secret && req.headers.get("x-telegram-bot-api-secret-token") !== secret) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const update = await req.json().catch(() => null);
   const message = update?.message;
   const chatId = message?.chat?.id;
