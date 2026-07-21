@@ -106,8 +106,10 @@ function GameRow({ event, onOpen }: { event: CalendarEvent; onOpen: () => void }
       {/* Games: BO badge + match teams (fallback: segment text) */}
       <Cell color={color} className="flex items-stretch gap-2 px-2 py-1.5">
         {event.matchFormat && (
+          // Vertical badge: in vertical writing-mode the flex main axis runs
+          // top-to-bottom, so justify-center is what centers the text on it.
           <span
-            className="flex items-center rounded px-0.5 text-[10px] font-bold text-white [writing-mode:vertical-rl] rotate-180"
+            className="flex w-4 shrink-0 items-center justify-center rounded text-[10px] font-bold leading-none tracking-wide text-white [writing-mode:vertical-rl] rotate-180"
             style={{ background: color }}
           >
             {event.matchFormat}
