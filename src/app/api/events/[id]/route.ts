@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/guards";
-import { eventInclude, serializeEvent, eventInputSchema, type EventWithRelations } from "@/lib/events";
+import {
+  eventInclude,
+  serializeEvent,
+  eventInputSchema,
+  resolveTeamIds,
+  type EventWithRelations,
+} from "@/lib/events";
 import { notify } from "@/lib/notifications";
 import {
   syncEventToGoogle,
@@ -46,6 +52,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     );
   }
   const data = parsed.data;
+  const participantIds = [...new Set([...data.participantIds, ...(await resolveTeamIds(data.teams))])];
 
   // Replace assignments and participants wholesale (simplest correct approach).
   const updated = await prisma.event.update({
@@ -60,6 +67,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       matchFormat: data.matchFormat || null,
       countryTag: data.countryTag || null,
       streamLinks: data.streamLinks || null,
+      cleanFeedYoutube: data.cleanFeedYoutube || null,
+      cleanFeedRtmp: data.cleanFeedRtmp || null,
+      graphicsUrl: data.graphicsUrl || null,
       notes: data.notes || null,
       internalComment: data.internalComment || null,
       color: data.color || null,
@@ -73,7 +83,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       },
       participants: {
         deleteMany: {},
-        create: data.participantIds.map((id) => ({ participantId: id })),
+        create: participantIds.map((id) => ({ participantId: id })),
       },
       streamChannels: {
         deleteMany: {},

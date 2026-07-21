@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/guards";
-import { eventInclude, serializeEvent, eventInputSchema, type EventWithRelations } from "@/lib/events";
+import {
+  eventInclude,
+  serializeEvent,
+  eventInputSchema,
+  resolveTeamIds,
+  type EventWithRelations,
+} from "@/lib/events";
 import { notify } from "@/lib/notifications";
 import { syncEventToGoogle, syncEventWithInvites } from "@/lib/integrations/google";
 import { buildCastMessage } from "@/lib/integrations/telegram";
@@ -100,6 +106,7 @@ export async function POST(req: Request) {
     );
   }
   const data = parsed.data;
+  const participantIds = [...new Set([...data.participantIds, ...(await resolveTeamIds(data.teams))])];
 
   const event = await prisma.event.create({
     data: {
@@ -112,6 +119,9 @@ export async function POST(req: Request) {
       matchFormat: data.matchFormat || null,
       countryTag: data.countryTag || null,
       streamLinks: data.streamLinks || null,
+      cleanFeedYoutube: data.cleanFeedYoutube || null,
+      cleanFeedRtmp: data.cleanFeedRtmp || null,
+      graphicsUrl: data.graphicsUrl || null,
       notes: data.notes || null,
       internalComment: data.internalComment || null,
       color: data.color || null,
@@ -121,7 +131,7 @@ export async function POST(req: Request) {
       discordChannelId: data.discordChannelId || null,
       createdById: auth.user.id,
       assignments: { create: data.assignments.map((a) => ({ userId: a.userId, role: a.role })) },
-      participants: { create: data.participantIds.map((id) => ({ participantId: id })) },
+      participants: { create: participantIds.map((id) => ({ participantId: id })) },
       streamChannels: { create: data.streamChannelIds.map((id) => ({ streamChannelId: id })) },
     },
     include: eventInclude,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { prisma } from "./prisma";
 
 export const eventInclude = {
   discipline: true,
@@ -33,6 +34,9 @@ export function serializeEvent(e: EventWithRelations) {
     matchFormat: e.matchFormat,
     countryTag: e.countryTag,
     streamLinks: e.streamLinks,
+    cleanFeedYoutube: e.cleanFeedYoutube,
+    cleanFeedRtmp: e.cleanFeedRtmp,
+    graphicsUrl: e.graphicsUrl,
     notes: e.notes,
     internalComment: e.internalComment,
     color: e.color ?? e.discipline.color,
@@ -90,10 +94,23 @@ export const eventInputSchema = z.object({
   startsAt: z.string().datetime({ offset: true }).or(z.string().min(1)),
   endsAt: z.string().datetime({ offset: true }).or(z.string().min(1)),
   status: z.enum(["DRAFT", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "CHANGED"]),
-  setupType: z.enum(["STUDIO", "REMOTE", "ON_SITE", "HYBRID"]),
+  setupType: z.enum([
+    "STUDIO",
+    "REMOTE",
+    "ON_SITE",
+    "HYBRID",
+    "PC_DIRECTORS",
+    "SERVER_OSTAP",
+    "AIRGPU",
+  ]),
   matchFormat: z.enum(["BO1", "BO3", "BO5"]).optional().nullable(),
   countryTag: z.string().optional().nullable(),
   streamLinks: z.string().optional().nullable(),
+  cleanFeedYoutube: z.string().optional().nullable(),
+  cleanFeedRtmp: z.string().optional().nullable(),
+  graphicsUrl: z.string().optional().nullable(),
+  // Match teams by name; upserted as MAIN participants server-side.
+  teams: z.array(z.string().trim().max(120)).max(2).default([]),
   notes: z.string().optional().nullable(),
   internalComment: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
@@ -107,3 +124,18 @@ export const eventInputSchema = z.object({
 });
 
 export type EventInput = z.infer<typeof eventInputSchema>;
+
+/** Upsert MAIN participants for the given team names and return their ids. */
+export async function resolveTeamIds(teams: string[]): Promise<string[]> {
+  const names = teams.map((t) => t.trim()).filter(Boolean);
+  const ids: string[] = [];
+  for (const name of names) {
+    const p = await prisma.participant.upsert({
+      where: { name_type: { name, type: "MAIN" } },
+      create: { name, type: "MAIN" },
+      update: {},
+    });
+    ids.push(p.id);
+  }
+  return ids;
+}

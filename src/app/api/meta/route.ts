@@ -7,7 +7,7 @@ export async function GET() {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
 
-  const [disciplines, studios, channels, discordChannels, streamChannels, users, participants] =
+  const [disciplines, studios, channels, discordChannels, streamChannels, users, participants, titleRows] =
     await Promise.all([
       prisma.discipline.findMany({ orderBy: { name: "asc" } }),
       prisma.studio.findMany({ orderBy: { name: "asc" } }),
@@ -20,9 +20,11 @@ export async function GET() {
         select: { id: true, username: true, name: true, surname: true, avatarUrl: true },
       }),
       prisma.participant.findMany({ orderBy: { name: "asc" } }),
+      prisma.event.findMany({ distinct: ["title"], select: { title: true }, orderBy: { title: "asc" } }),
     ]);
 
   return NextResponse.json({
+    eventTitles: titleRows.map((t) => t.title),
     disciplines,
     studios,
     channels,

@@ -46,10 +46,14 @@ enum EventStatus {
 }
 
 enum SetupType {
+  // Legacy values kept for old rows; the form offers the three real setups.
   STUDIO
   REMOTE
   ON_SITE
   HYBRID
+  PC_DIRECTORS
+  SERVER_OSTAP
+  AIRGPU
 }
 
 enum MatchFormat {
@@ -196,8 +200,14 @@ model Event {
   // never double-sends).
   dayBeforeReminderAt DateTime?
   dayOfReminderAt     DateTime?
-  countryTag  String? // language / country tag, e.g. "EN", "UA"
-  streamLinks String? // newline-separated stream/channel links
+  countryTag  String? // broadcast language, e.g. "UA", "ENG"
+  streamLinks String? // legacy newline-separated links (form now uses clean feed fields)
+
+  // Clean feed links for the director (copyable from the event card).
+  cleanFeedYoutube String?
+  cleanFeedRtmp    String?
+  // Google Drive folder with graphics for the broadcast.
+  graphicsUrl String?
   notes       String?
   internalComment String?
   color       String? // optional override; defaults to discipline color

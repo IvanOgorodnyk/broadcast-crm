@@ -23,6 +23,7 @@ export type MetaUser = {
 };
 
 export type Meta = {
+  eventTitles: string[];
   disciplines: { id: string; name: string; color: string }[];
   studios: { id: string; name: string; isAnalystStudio?: boolean }[];
   channels: { id: string; name: string }[];
@@ -52,6 +53,9 @@ export type CalendarEvent = {
   matchFormat: MatchFormat | null;
   countryTag: string | null;
   streamLinks: string | null;
+  cleanFeedYoutube: string | null;
+  cleanFeedRtmp: string | null;
+  graphicsUrl: string | null;
   notes: string | null;
   internalComment: string | null;
   color: string;

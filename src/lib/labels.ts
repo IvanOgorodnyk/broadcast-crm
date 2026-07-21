@@ -61,6 +61,9 @@ export const SETUP_LABEL: Record<SetupType, string> = {
   REMOTE: "Remote",
   ON_SITE: "On site",
   HYBRID: "Hybrid",
+  PC_DIRECTORS: "PC Directors",
+  SERVER_OSTAP: "Server Ostap",
+  AIRGPU: "AirGPU",
 };
 
 export const STATUSES: EventStatus[] = [
@@ -72,6 +75,23 @@ export const STATUSES: EventStatus[] = [
   "CHANGED",
 ];
 
-// Real OBLOGA setup is Remote-only. Other enum values remain valid in the DB
+// Setups offered in the event form. Legacy enum values remain valid in the DB
 // but are not offered in the UI.
-export const SETUP_TYPES: SetupType[] = ["REMOTE"];
+export const SETUP_TYPES: SetupType[] = ["PC_DIRECTORS", "SERVER_OSTAP", "AIRGPU"];
+
+// Broadcast languages offered in the event form.
+export const LANGUAGES = ["UA", "ENG"];
+
+// Palette for the "Color of blocks" picker.
+export const BLOCK_COLORS = [
+  "#16a3e0", // blue
+  "#7c3aed", // violet
+  "#db2777", // pink
+  "#ef2b2b", // red
+  "#ea580c", // orange
+  "#d97706", // amber
+  "#65a30d", // lime
+  "#16a34a", // green
+  "#0d9488", // teal
+  "#475569", // slate
+];
