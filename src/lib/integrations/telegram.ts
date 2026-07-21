@@ -10,7 +10,14 @@
  */
 
 import type { AssignmentRole } from "@prisma/client";
-import { SETUP_LABEL } from "../labels";
+import {
+  ANALYST_ROLES,
+  ASSIGNMENT_ROLE_LABEL,
+  CASTER_ROLES,
+  DIRECTOR_ROLES,
+  SETUP_LABEL,
+  SMM_ROLES,
+} from "../labels";
 import type { EventWithRelations } from "../events";
 
 const API = (method: string) =>
@@ -24,15 +31,21 @@ function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function names(event: EventWithRelations, role: AssignmentRole) {
+/**
+ * People in a role bucket. Anyone holding a secondary role of that bucket
+ * (a host among analysts, a producer among directors…) is marked in brackets
+ * so nobody silently disappears from the card.
+ */
+function names(event: EventWithRelations, roles: AssignmentRole[], primary: AssignmentRole) {
   const list = event.assignments
-    .filter((a) => a.role === role)
+    .filter((a) => roles.includes(a.role))
     .map((a) => {
       const u = a.user;
-      const full = [u.name, u.surname].filter(Boolean).join(" ");
-      return full || u.username;
+      const full = [u.name, u.surname].filter(Boolean).join(" ") || u.username;
+      const marker = a.role === primary ? "" : ` (${ASSIGNMENT_ROLE_LABEL[a.role].toLowerCase()})`;
+      return esc(full) + marker;
     });
-  return list.length ? esc(list.join(", ")) : "—";
+  return list.length ? list.join(", ") : "—";
 }
 
 const KYIV_DATE = new Intl.DateTimeFormat("uk-UA", {
@@ -57,10 +70,7 @@ export function buildCastMessage(event: EventWithRelations, heading?: string) {
   const match = event.participants
     .filter((p) => p.participant.type === "MAIN")
     .map((p) => p.participant.name);
-  const channels = [
-    event.channel?.name,
-    ...event.streamChannels.map((s) => s.streamChannel.name),
-  ].filter(Boolean) as string[];
+  const channels = event.streamChannels.map((s) => s.streamChannel.name);
 
   const lines = [
     heading ? `${heading}\n` : null,
@@ -71,10 +81,10 @@ export function buildCastMessage(event: EventWithRelations, heading?: string) {
     "",
     "---------------- Casts -------------",
     `🇺🇦 Broadcast language: ${event.countryTag ? esc(event.countryTag) : "—"}`,
-    `🎤 Commentators: ${names(event, "CASTER")}`,
-    `🗣 Analysts: ${names(event, "ANALYST")}`,
-    `🧿 Director: ${names(event, "DIRECTOR")}`,
-    `✨ SMM: ${names(event, "SMM")}`,
+    `🎤 Commentators: ${names(event, CASTER_ROLES, "CASTER")}`,
+    `🗣 Analysts: ${names(event, ANALYST_ROLES, "ANALYST")}`,
+    `🧿 Director: ${names(event, DIRECTOR_ROLES, "DIRECTOR")}`,
+    `✨ SMM: ${names(event, SMM_ROLES, "SMM")}`,
     `🎛 Setup: ${SETUP_LABEL[event.setupType]}`,
     `📢 Channels: ${channels.length ? esc(channels.join(", ")) : "—"}`,
   ].filter((l): l is string => l !== null);

@@ -12,6 +12,7 @@ import {
 import { notify } from "@/lib/notifications";
 import { syncEventToGoogle, syncEventWithInvites } from "@/lib/integrations/google";
 import { buildCastMessage } from "@/lib/integrations/telegram";
+import { ANALYST_ROLES, DIRECTOR_ROLES, SMM_ROLES } from "@/lib/labels";
 
 /**
  * GET /api/events?from=ISO&to=ISO&disciplineId=...&studioId=...&channelId=...
@@ -49,18 +50,8 @@ export async function GET(req: Request) {
   const languages = getAll("language");
   if (languages.length) where.countryTag = { in: languages };
 
-  // Role buckets mirror the calendar columns.
-  const ANALYST_ROLES = ["ANALYST", "HOST"] as const;
-  const DIRECTOR_ROLES = [
-    "DIRECTOR",
-    "PRODUCER",
-    "OBSERVER",
-    "REPLAY_OPERATOR",
-    "TECHNICAL_STAFF",
-  ] as const;
-  const SMM_ROLES = ["SMM", "MEDIA_REPRESENTATIVE"] as const;
-
-  // Assignment-based filters — match any listed user within the role bucket.
+  // Assignment-based filters — match any listed user within the role bucket
+  // (buckets live in lib/labels so grid, filters and notifications agree).
   const assignmentFilters: Prisma.EventWhereInput[] = [];
   const casterIds = getAll("casterId");
   if (casterIds.length)
@@ -68,17 +59,17 @@ export async function GET(req: Request) {
   const analystIds = getAll("analystId");
   if (analystIds.length)
     assignmentFilters.push({
-      assignments: { some: { role: { in: [...ANALYST_ROLES] }, userId: { in: analystIds } } },
+      assignments: { some: { role: { in: ANALYST_ROLES }, userId: { in: analystIds } } },
     });
   const directorIds = getAll("directorId");
   if (directorIds.length)
     assignmentFilters.push({
-      assignments: { some: { role: { in: [...DIRECTOR_ROLES] }, userId: { in: directorIds } } },
+      assignments: { some: { role: { in: DIRECTOR_ROLES }, userId: { in: directorIds } } },
     });
   const smmIds = getAll("smmId");
   if (smmIds.length)
     assignmentFilters.push({
-      assignments: { some: { role: { in: [...SMM_ROLES] }, userId: { in: smmIds } } },
+      assignments: { some: { role: { in: SMM_ROLES }, userId: { in: smmIds } } },
     });
 
   const streamChannelIds = getAll("streamChannelId");

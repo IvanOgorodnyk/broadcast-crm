@@ -2,7 +2,16 @@
 
 import Avatar from "@/components/Avatar";
 import { hhmm } from "@/lib/utils";
-import { ASSIGNMENT_ROLE_LABEL, SETUP_LABEL, STATUS_COLOR, STATUS_LABEL } from "@/lib/labels";
+import {
+  ANALYST_ROLES,
+  ASSIGNMENT_ROLE_LABEL,
+  CASTER_ROLES,
+  DIRECTOR_ROLES,
+  SETUP_LABEL,
+  SMM_ROLES,
+  STATUS_COLOR,
+  STATUS_LABEL,
+} from "@/lib/labels";
 import type { CalendarEvent, EventAssignment } from "@/types";
 
 /** Column template shared by the game rows and the calendar header. */
@@ -65,14 +74,9 @@ export default function EventRow({
   );
 }
 
-const CASTERS = ["CASTER"];
-const ANALYSTS = ["ANALYST", "HOST"];
-const DIRECTORS = ["DIRECTOR", "PRODUCER", "OBSERVER", "REPLAY_OPERATOR", "TECHNICAL_STAFF"];
-const SMM = ["SMM", "MEDIA_REPRESENTATIVE"];
-
 function GameRow({ event, onOpen }: { event: CalendarEvent; onOpen: () => void }) {
   const color = event.color;
-  const by = (roles: string[]) =>
+  const by = (roles: readonly string[]) =>
     event.assignments.filter((a) => roles.includes(a.role));
 
   const teams = event.participants.filter((p) => p.type === "MAIN").map((p) => p.name);
@@ -140,8 +144,8 @@ function GameRow({ event, onOpen }: { event: CalendarEvent; onOpen: () => void }
       <PeopleCell
         color={color}
         sections={[
-          { label: "Casters", people: by(CASTERS) },
-          { label: "Analysts", people: by(ANALYSTS), tag: (a) => (a.role === "HOST" ? "host" : null) },
+          { label: "Casters", people: by(CASTER_ROLES) },
+          { label: "Analysts", people: by(ANALYST_ROLES), tag: (a) => (a.role === "HOST" ? "host" : null) },
         ]}
       />
 
@@ -151,7 +155,7 @@ function GameRow({ event, onOpen }: { event: CalendarEvent; onOpen: () => void }
         sections={[
           {
             label: "Directors",
-            people: by(DIRECTORS),
+            people: by(DIRECTOR_ROLES),
             tag: (a) => (a.role === "DIRECTOR" ? null : ASSIGNMENT_ROLE_LABEL[a.role].toLowerCase()),
           },
         ]}
@@ -164,7 +168,7 @@ function GameRow({ event, onOpen }: { event: CalendarEvent; onOpen: () => void }
         sections={[
           {
             label: "SMM",
-            people: by(SMM),
+            people: by(SMM_ROLES),
             tag: (a) => (a.role === "MEDIA_REPRESENTATIVE" ? "media" : null),
           },
         ]}

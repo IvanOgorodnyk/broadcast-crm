@@ -38,6 +38,21 @@ export const STAFF_POSITION_LABEL: Record<string, string> = {
   SMM: "SMM specialist",
 };
 
+/**
+ * Role buckets behind the calendar columns. Shared by the calendar grid, the
+ * filter panel and the Telegram/Google notifications so they can't drift apart.
+ */
+export const CASTER_ROLES: AssignmentRole[] = ["CASTER"];
+export const ANALYST_ROLES: AssignmentRole[] = ["ANALYST", "HOST"];
+export const DIRECTOR_ROLES: AssignmentRole[] = [
+  "DIRECTOR",
+  "PRODUCER",
+  "OBSERVER",
+  "REPLAY_OPERATOR",
+  "TECHNICAL_STAFF",
+];
+export const SMM_ROLES: AssignmentRole[] = ["SMM", "MEDIA_REPRESENTATIVE"];
+
 export const STATUS_LABEL: Record<EventStatus, string> = {
   DRAFT: "Draft",
   CONFIRMED: "Confirmed",
