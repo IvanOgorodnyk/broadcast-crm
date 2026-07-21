@@ -40,37 +40,46 @@ export async function GET(req: Request) {
   const disciplineIds = getAll("disciplineId");
   if (disciplineIds.length) where.disciplineId = { in: disciplineIds };
 
-  const studioIds = getAll("studioId");
-  if (studioIds.length) where.studioId = { in: studioIds };
-
-  const channelIds = getAll("channelId");
-  if (channelIds.length) where.channelId = { in: channelIds };
-
-  const discordChannelIds = getAll("discordChannelId");
-  if (discordChannelIds.length) where.discordChannelId = { in: discordChannelIds };
+  const titles = getAll("title");
+  if (titles.length) where.title = { in: titles };
 
   const setupTypes = getAll("setupType");
   if (setupTypes.length) where.setupType = { in: setupTypes as never };
 
-  // Assignment-based filters (caster/analyst/staff) — match any listed user/role.
+  const languages = getAll("language");
+  if (languages.length) where.countryTag = { in: languages };
+
+  // Role buckets mirror the calendar columns.
+  const ANALYST_ROLES = ["ANALYST", "HOST"] as const;
+  const DIRECTOR_ROLES = [
+    "DIRECTOR",
+    "PRODUCER",
+    "OBSERVER",
+    "REPLAY_OPERATOR",
+    "TECHNICAL_STAFF",
+  ] as const;
+  const SMM_ROLES = ["SMM", "MEDIA_REPRESENTATIVE"] as const;
+
+  // Assignment-based filters — match any listed user within the role bucket.
   const assignmentFilters: Prisma.EventWhereInput[] = [];
   const casterIds = getAll("casterId");
   if (casterIds.length)
     assignmentFilters.push({ assignments: { some: { role: "CASTER", userId: { in: casterIds } } } });
   const analystIds = getAll("analystId");
   if (analystIds.length)
-    assignmentFilters.push({ assignments: { some: { role: "ANALYST", userId: { in: analystIds } } } });
-  const staffIds = getAll("staffId");
-  if (staffIds.length) assignmentFilters.push({ assignments: { some: { userId: { in: staffIds } } } });
-  const mediaIds = getAll("mediaId");
-  if (mediaIds.length)
     assignmentFilters.push({
-      assignments: { some: { role: "MEDIA_REPRESENTATIVE", userId: { in: mediaIds } } },
+      assignments: { some: { role: { in: [...ANALYST_ROLES] }, userId: { in: analystIds } } },
     });
-
-  const participantIds = getAll("participantId");
-  if (participantIds.length)
-    assignmentFilters.push({ participants: { some: { participantId: { in: participantIds } } } });
+  const directorIds = getAll("directorId");
+  if (directorIds.length)
+    assignmentFilters.push({
+      assignments: { some: { role: { in: [...DIRECTOR_ROLES] }, userId: { in: directorIds } } },
+    });
+  const smmIds = getAll("smmId");
+  if (smmIds.length)
+    assignmentFilters.push({
+      assignments: { some: { role: { in: [...SMM_ROLES] }, userId: { in: smmIds } } },
+    });
 
   const streamChannelIds = getAll("streamChannelId");
   if (streamChannelIds.length)

@@ -2,33 +2,32 @@
 
 import MultiSelect from "./MultiSelect";
 import { displayName } from "@/lib/utils";
-import { SETUP_LABEL, SETUP_TYPES } from "@/lib/labels";
+import { LANGUAGES, SETUP_LABEL, SETUP_TYPES } from "@/lib/labels";
 import type { Meta } from "@/types";
 
+/** Filter keys map 1:1 to /api/events query params and the calendar columns. */
 export type Filters = {
   disciplineId: string[];
-  studioId: string[];
-  channelId: string[];
-  discordChannelId: string[];
-  streamChannelId: string[];
+  title: string[];
   setupType: string[];
+  language: string[];
+  streamChannelId: string[];
   casterId: string[];
   analystId: string[];
-  staffId: string[];
-  participantId: string[];
+  directorId: string[];
+  smmId: string[];
 };
 
 export const emptyFilters: Filters = {
   disciplineId: [],
-  studioId: [],
-  channelId: [],
-  discordChannelId: [],
-  streamChannelId: [],
+  title: [],
   setupType: [],
+  language: [],
+  streamChannelId: [],
   casterId: [],
   analystId: [],
-  staffId: [],
-  participantId: [],
+  directorId: [],
+  smmId: [],
 };
 
 export default function FilterPanel({
@@ -67,10 +66,10 @@ export default function FilterPanel({
         onChange={set("disciplineId")}
       />
       <MultiSelect
-        label="Studio"
-        options={meta.studios.map((s) => ({ value: s.id, label: s.name }))}
-        selected={filters.studioId}
-        onChange={set("studioId")}
+        label="Event"
+        options={meta.eventTitles.map((t) => ({ value: t, label: t }))}
+        selected={filters.title}
+        onChange={set("title")}
       />
       <MultiSelect
         label="Setup"
@@ -79,16 +78,10 @@ export default function FilterPanel({
         onChange={set("setupType")}
       />
       <MultiSelect
-        label="Broadcast channel"
-        options={meta.channels.map((c) => ({ value: c.id, label: c.name }))}
-        selected={filters.channelId}
-        onChange={set("channelId")}
-      />
-      <MultiSelect
-        label="Discord channel"
-        options={meta.discordChannels.map((c) => ({ value: c.id, label: c.name }))}
-        selected={filters.discordChannelId}
-        onChange={set("discordChannelId")}
+        label="Language"
+        options={LANGUAGES.map((l) => ({ value: l, label: l }))}
+        selected={filters.language}
+        onChange={set("language")}
       />
       <MultiSelect
         label="Streaming channel"
@@ -96,15 +89,10 @@ export default function FilterPanel({
         selected={filters.streamChannelId}
         onChange={set("streamChannelId")}
       />
-      <MultiSelect
-        label="Media Representatives"
-        options={meta.participants.media.map((p) => ({ value: p.id, label: p.name }))}
-        selected={filters.participantId}
-        onChange={set("participantId")}
-      />
       <MultiSelect label="Casters" options={userOpts} selected={filters.casterId} onChange={set("casterId")} />
       <MultiSelect label="Analysts" options={userOpts} selected={filters.analystId} onChange={set("analystId")} />
-      <MultiSelect label="Staff" options={userOpts} selected={filters.staffId} onChange={set("staffId")} />
+      <MultiSelect label="Directors" options={userOpts} selected={filters.directorId} onChange={set("directorId")} />
+      <MultiSelect label="SMM" options={userOpts} selected={filters.smmId} onChange={set("smmId")} />
     </aside>
   );
 }
