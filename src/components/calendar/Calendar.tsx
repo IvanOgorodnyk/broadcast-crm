@@ -11,7 +11,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import FilterPanel, { emptyFilters, type Filters } from "./FilterPanel";
-import EventRow, { GAME_COLS } from "./EventRow";
+import EventRow, { GAME_COLS, DISCIPLINE_COL, EVENT_COL } from "./EventRow";
 import EventModal from "./EventModal";
 import DatePicker from "./DatePicker";
 import type { CalendarEvent, CalendarView, Meta, Viewer } from "@/types";
@@ -25,6 +25,8 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState<CalendarEvent | "new" | null>(null);
   const [showPicker, setShowPicker] = useState(false);
+  // Filters are collapsible so the wide grid gets the full window on laptops.
+  const [showFilters, setShowFilters] = useState(true);
 
   // [from, to) window for the active view.
   const range = useMemo(() => {
@@ -104,6 +106,11 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [events]);
 
+  const activeFilterCount = useMemo(
+    () => Object.values(filters).reduce((n, arr) => n + arr.length, 0),
+    [filters]
+  );
+
   const step = (dir: number) => {
     if (view === "month") setDate((d) => addMonths(d, dir));
     else if (view === "week") setDate((d) => addDays(d, dir * 7));
@@ -112,16 +119,33 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
 
   return (
     <div className="flex">
-      <FilterPanel
-        meta={meta}
-        filters={filters}
-        onChange={setFilters}
-        onClear={() => setFilters(emptyFilters)}
-      />
+      {showFilters && (
+        <FilterPanel
+          meta={meta}
+          filters={filters}
+          onChange={setFilters}
+          onClear={() => setFilters(emptyFilters)}
+          onCollapse={() => setShowFilters(false)}
+        />
+      )}
 
       <div className="min-w-0 flex-1 p-4">
         {/* Navigation bar */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
+          {!showFilters && (
+            <button
+              onClick={() => setShowFilters(true)}
+              className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-brand hover:bg-gray-50"
+              title="Show filters"
+            >
+              ⛃ Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-1.5 rounded-full bg-brand px-1.5 text-xs font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          )}
           <button
             onClick={() => setDate(startOfDay(new Date()))}
             className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
@@ -178,15 +202,15 @@ export default function Calendar({ canEdit, viewer }: { canEdit: boolean; viewer
           )}
         </div>
 
-        {/* Wide grid scrolls horizontally on narrow screens. */}
+        {/* Wide grid scrolls horizontally only on genuinely narrow screens. */}
         <div className="overflow-x-auto scroll-thin">
-        <div className="min-w-[1080px]">
+        <div className="min-w-[920px]">
 
         {/* Column header (day view) */}
         {view === "day" && events.length > 0 && (
           <div className="mb-1 flex gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-            <span className="w-24 shrink-0 px-1">Discipline</span>
-            <span className="w-56 shrink-0 px-1">Event</span>
+            <span className={`${DISCIPLINE_COL} shrink-0 px-1`}>Discipline</span>
+            <span className={`${EVENT_COL} shrink-0 px-1`}>Event</span>
             <div className={`grid ${GAME_COLS} min-w-0 flex-1 gap-1.5`}>
               <span className="pl-1">Time</span>
               <span>Games</span>

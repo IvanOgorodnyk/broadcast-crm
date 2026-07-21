@@ -6,8 +6,11 @@ import { ASSIGNMENT_ROLE_LABEL, SETUP_LABEL, STATUS_COLOR, STATUS_LABEL } from "
 import type { CalendarEvent, EventAssignment } from "@/types";
 
 /** Column template shared by the game rows and the calendar header. */
-export const GAME_COLS =
-  "grid-cols-[64px_1.4fr_1fr_1.3fr_1.2fr_1fr_1.2fr]";
+export const GAME_COLS = "grid-cols-[52px_1.35fr_0.95fr_1.3fr_1fr_0.85fr_1.05fr]";
+
+/** Fixed left columns, shared with the calendar header. */
+export const DISCIPLINE_COL = "w-20";
+export const EVENT_COL = "w-44";
 
 /**
  * One tournament group: discipline logo + tournament title on the left,
@@ -26,17 +29,19 @@ export default function EventRow({
   return (
     <div className="flex items-stretch gap-1.5">
       {/* Discipline logo */}
-      <div className="flex w-24 shrink-0 items-center justify-center rounded-md border border-gray-100 bg-white px-1 py-2">
+      <div
+        className={`flex ${DISCIPLINE_COL} shrink-0 items-center justify-center rounded-md border border-gray-100 bg-white px-1 py-2`}
+      >
         {first.discipline.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={first.discipline.logoUrl}
             alt={first.discipline.name}
             title={first.discipline.name}
-            className="max-h-12 max-w-full object-contain"
+            className="max-h-10 max-w-full object-contain"
           />
         ) : (
-          <span className="text-center text-sm font-bold leading-tight" style={{ color }}>
+          <span className="text-center text-xs font-bold leading-tight" style={{ color }}>
             {first.discipline.name}
           </span>
         )}
@@ -44,7 +49,7 @@ export default function EventRow({
 
       {/* Tournament title */}
       <div
-        className="flex w-56 shrink-0 items-center justify-center rounded-md px-3 text-center text-sm font-semibold text-gray-800"
+        className={`flex ${EVENT_COL} shrink-0 items-center justify-center rounded-md px-2 text-center text-sm font-semibold leading-tight text-gray-800`}
         style={{ background: tint(color, 0.16), boxShadow: `inset 4px 0 0 0 ${color}` }}
       >
         {first.title}
@@ -152,9 +157,10 @@ function GameRow({ event, onOpen }: { event: CalendarEvent; onOpen: () => void }
         ]}
       />
 
-      {/* SMM */}
+      {/* SMM — hover card opens leftwards so it can't widen the grid */}
       <PeopleCell
         color={color}
+        alignRight
         sections={[
           {
             label: "SMM",
@@ -201,9 +207,12 @@ function Cell({
 function PeopleCell({
   color,
   sections,
+  alignRight = false,
 }: {
   color: string;
   sections: { label: string; people: EventAssignment[]; tag?: (a: EventAssignment) => string | null }[];
+  /** Anchor the hover card to the cell's right edge (for right-most columns). */
+  alignRight?: boolean;
 }) {
   const filled = sections.filter((s) => s.people.length > 0);
   const all = filled.flatMap((s) => s.people);
@@ -234,7 +243,11 @@ function PeopleCell({
       {all.length > 6 && <span className="text-xs text-gray-500">+{all.length - 6}</span>}
 
       {/* Hover card with the full list */}
-      <div className="pointer-events-none invisible absolute left-0 top-full z-30 mt-1 w-72 rounded-xl bg-white p-4 opacity-0 shadow-2xl ring-1 ring-black/10 transition-opacity duration-100 group-hover:visible group-hover:opacity-100">
+      <div
+        className={`pointer-events-none invisible absolute ${
+          alignRight ? "right-0" : "left-0"
+        } top-full z-30 mt-1 w-72 rounded-xl bg-white p-4 opacity-0 shadow-2xl ring-1 ring-black/10 transition-opacity duration-100 group-hover:visible group-hover:opacity-100`}
+      >
         {filled.map((s) => (
           <div key={s.label} className="mb-3 last:mb-0">
             <p className="mb-1.5 text-sm text-gray-400">{s.label}</p>

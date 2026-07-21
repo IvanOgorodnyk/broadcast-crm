@@ -35,13 +35,15 @@ export default function FilterPanel({
   filters,
   onChange,
   onClear,
+  onCollapse,
 }: {
   meta: Meta | null;
   filters: Filters;
   onChange: (next: Filters) => void;
   onClear: () => void;
+  onCollapse: () => void;
 }) {
-  if (!meta) return <div className="p-4 text-sm text-gray-400">Loading filters…</div>;
+  if (!meta) return <div className="w-56 shrink-0 p-4 text-sm text-gray-400">Loading filters…</div>;
 
   const userOpts = meta.users.map((u) => ({ value: u.id, label: displayName(u) }));
   const set = (key: keyof Filters) => (values: string[]) => onChange({ ...filters, [key]: values });
@@ -49,14 +51,21 @@ export default function FilterPanel({
   const activeCount = Object.values(filters).reduce((n, arr) => n + arr.length, 0);
 
   return (
-    <aside className="w-64 shrink-0 border-r border-gray-200 bg-white">
-      <div className="flex items-center justify-between px-4 py-3">
+    <aside className="w-56 shrink-0 border-r border-gray-200 bg-white">
+      <div className="flex items-center gap-2 px-4 py-3">
         <span className="flex items-center gap-2 font-semibold text-brand">⛃ Filter</span>
         {activeCount > 0 && (
-          <button onClick={onClear} className="text-xs font-medium text-brand hover:underline">
+          <button onClick={onClear} className="ml-auto text-xs font-medium text-brand hover:underline">
             ⟳ Clear
           </button>
         )}
+        <button
+          onClick={onCollapse}
+          title="Hide filters"
+          className={`text-lg leading-none text-gray-400 hover:text-brand ${activeCount > 0 ? "" : "ml-auto"}`}
+        >
+          «
+        </button>
       </div>
 
       <MultiSelect
