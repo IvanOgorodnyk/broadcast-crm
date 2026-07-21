@@ -13,8 +13,9 @@
  */
 
 import { createHash } from "crypto";
-import type { Event, AssignmentRole } from "@prisma/client";
+import type { AssignmentRole } from "@prisma/client";
 import { prisma } from "../prisma";
+import { ASSIGNMENT_ROLE_LABEL, SETUP_LABEL } from "../labels";
 import type { EventWithRelations } from "../events";
 
 export function googleEnabled() {
@@ -74,20 +75,50 @@ async function accessTokenFromRefresh(refreshToken: string) {
 
 type SyncContext = {
   refreshToken: string;
-  event: Event & { discipline?: { name: string } | null; studio?: { name: string } | null; channel?: { name: string } | null };
+  event: EventWithRelations;
   role: AssignmentRole;
 };
 
-function buildDescription(ctx: SyncContext) {
-  const lines = [
-    `Role: ${ctx.role}`,
-    ctx.event.segment ? `Segment: ${ctx.event.segment}` : null,
-    ctx.event.studio ? `Studio: ${ctx.event.studio.name}` : null,
-    ctx.event.channel ? `Channel: ${ctx.event.channel.name}` : null,
-    ctx.event.notes ? `Notes: ${ctx.event.notes}` : null,
-    `${process.env.APP_URL ?? ""}/calendar?event=${ctx.event.id}`,
-  ].filter(Boolean);
-  return lines.join("\n");
+/** Teams of the match, e.g. ["NAVI", "Spirit"]. */
+function matchTeams(event: EventWithRelations) {
+  return event.participants
+    .filter((p) => p.participant.type === "MAIN")
+    .map((p) => p.participant.name);
+}
+
+/**
+ * Calendar event title: tournament + matchup + format,
+ * e.g. `EWC 26 — NAVI vs Spirit (BO3)`.
+ */
+export function buildSummary(event: EventWithRelations) {
+  const teams = matchTeams(event);
+  const head = [event.title, teams.length ? teams.join(" vs ") : event.segment]
+    .filter(Boolean)
+    .join(" — ");
+  return event.matchFormat ? `${head} (${event.matchFormat})` : head;
+}
+
+export function buildDescription(event: EventWithRelations, role?: AssignmentRole) {
+  const staff = event.assignments.map((a) => {
+    const full = [a.user.name, a.user.surname].filter(Boolean).join(" ");
+    return `• ${full || a.user.username} — ${ASSIGNMENT_ROLE_LABEL[a.role]}`;
+  });
+  const channels = event.streamChannels.map((s) => s.streamChannel.name);
+
+  return [
+    role ? `Your role: ${ASSIGNMENT_ROLE_LABEL[role]}` : null,
+    event.countryTag ? `Language: ${event.countryTag}` : null,
+    `Setup: ${SETUP_LABEL[event.setupType]}`,
+    channels.length ? `Channels: ${channels.join(", ")}` : null,
+    staff.length ? `\nStaff:\n${staff.join("\n")}` : null,
+    event.cleanFeedYoutube ? `\nClean feed (YouTube): ${event.cleanFeedYoutube}` : null,
+    event.cleanFeedRtmp ? `Clean feed (RTMP): ${event.cleanFeedRtmp}` : null,
+    event.graphicsUrl ? `Graphics: ${event.graphicsUrl}` : null,
+    event.notes ? `\nNotes: ${event.notes}` : null,
+    `\n${process.env.APP_URL ?? ""}/calendar?event=${event.id}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /**
@@ -99,12 +130,12 @@ export async function syncEventToGoogle(ctx: SyncContext) {
   try {
     const token = await accessTokenFromRefresh(ctx.refreshToken);
     const body = {
-      summary: ctx.event.title,
-      description: buildDescription(ctx),
+      summary: buildSummary(ctx.event),
+      description: buildDescription(ctx.event, ctx.role),
       start: { dateTime: ctx.event.startsAt.toISOString() },
       end: { dateTime: ctx.event.endsAt.toISOString() },
       // A stable id derived from the CRM event id so updates replace in place.
-      id: `bcrm${ctx.event.id.replace(/[^a-z0-9]/gi, "").toLowerCase()}`,
+      id: googleEventId(ctx.event.id),
     };
     // Try update; if it 404s, insert.
     const updateRes = await fetch(
@@ -175,25 +206,11 @@ export async function syncEventWithInvites(event: EventWithRelations): Promise<b
     });
     const emailById = new Map(users.map((u) => [u.id, u.email]));
 
-    const staffLines = event.assignments
-      .filter((a) => emailById.has(a.userId))
-      .map((a) => `${a.user.username} — ${a.role}`);
-    const description = [
-      event.segment ? `Segment: ${event.segment}` : null,
-      event.studio ? `Studio: ${event.studio.name}` : null,
-      event.channel ? `Channel: ${event.channel.name}` : null,
-      staffLines.length ? `Staff:\n${staffLines.join("\n")}` : null,
-      event.notes ? `Notes: ${event.notes}` : null,
-      `${process.env.APP_URL ?? ""}/calendar?event=${event.id}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
     const token = await accessTokenFromRefresh(refreshToken);
     const body = {
       id: googleEventId(event.id),
-      summary: event.title,
-      description,
+      summary: buildSummary(event),
+      description: buildDescription(event),
       start: { dateTime: event.startsAt.toISOString() },
       end: { dateTime: event.endsAt.toISOString() },
       attendees: [...emailById.values()].map((email) => ({ email })),
