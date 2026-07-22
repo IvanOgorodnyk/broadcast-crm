@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
+import MascotAscii from "@/components/MascotAscii";
 import { STAFF_POSITIONS, STAFF_POSITION_LABEL } from "@/lib/labels";
 
 const inputCls =
-  "mb-4 w-full rounded-md border border-gray-200 bg-blue-50/50 px-3 py-2 outline-none focus:border-brand";
+  "mb-4 w-full rounded-md border border-gray-200 bg-white/70 px-3 py-2 outline-none focus:border-brand";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -49,8 +50,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <form onSubmit={onSubmit} className="w-full max-w-sm py-8">
+    <div className="relative flex min-h-screen items-center justify-center px-4 py-8">
+      <MascotAscii />
+      <form
+        onSubmit={onSubmit}
+        className="relative z-10 w-full max-w-sm rounded-2xl border border-white/70 bg-white/65 p-8 shadow-xl shadow-gray-900/5 backdrop-blur-md"
+      >
         <div className="mb-6 flex justify-center">
           <Logo size={40} />
         </div>
@@ -95,7 +100,7 @@ export default function RegisterPage() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-gray-200 bg-blue-50/50 px-3 py-2 pr-10 outline-none focus:border-brand"
+            className="w-full rounded-md border border-gray-200 bg-white/70 px-3 py-2 pr-10 outline-none focus:border-brand"
           />
           <button
             type="button"
