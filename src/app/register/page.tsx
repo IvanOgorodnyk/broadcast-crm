@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import MascotAscii from "@/components/MascotAscii";
+import PrismShards from "@/components/PrismShards";
 import { STAFF_POSITIONS, STAFF_POSITION_LABEL } from "@/lib/labels";
 
 const inputCls =
@@ -50,7 +51,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
+      <PrismShards />
       <MascotAscii />
       <form
         onSubmit={onSubmit}

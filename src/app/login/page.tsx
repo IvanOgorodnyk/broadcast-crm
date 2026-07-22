@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import MascotAscii from "@/components/MascotAscii";
+import PrismShards from "@/components/PrismShards";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,7 +34,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      <PrismShards />
       <MascotAscii />
       <form
         onSubmit={onSubmit}
