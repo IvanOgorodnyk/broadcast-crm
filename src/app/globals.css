@@ -17,69 +17,6 @@ body {
   box-shadow: inset 6px 0 0 0 var(--row-color, #9ca3af);
 }
 
-/* ---------------------------------------------------------------------------
-   Auth-page backdrop: prismatic glass shards drifting from top to bottom.
-   --------------------------------------------------------------------------- */
-
-@keyframes prism-fall {
-  from {
-    transform: translate3d(var(--x0, 0px), -65vh, 0) rotate(var(--tilt, 0deg))
-      skewY(var(--skew, 0deg));
-  }
-  to {
-    transform: translate3d(var(--x1, 0px), 135vh, 0) rotate(var(--tilt, 0deg))
-      skewY(var(--skew, 0deg));
-  }
-}
-
-/* Slit-scan bands slide inside their shard, smearing the edges. */
-@keyframes prism-smear {
-  0%,
-  100% {
-    transform: translateX(calc(var(--smear, 6px) * -1));
-  }
-  50% {
-    transform: translateX(var(--smear, 6px));
-  }
-}
-
-@keyframes grain-drift {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(-2%, 1.5%, 0);
-  }
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-.prism-shard {
-  animation: prism-fall var(--dur, 60s) linear var(--delay, 0s) infinite;
-  will-change: transform;
-}
-
-.prism-band {
-  animation: prism-smear var(--smear-dur, 9s) ease-in-out var(--delay, 0s) infinite;
-}
-
-.film-grain {
-  animation: grain-drift 14s steps(6, end) infinite;
-}
-
-/* Respect users who ask for less motion: keep the art, drop the movement. */
-@media (prefers-reduced-motion: reduce) {
-  .prism-shard,
-  .prism-band,
-  .film-grain {
-    animation: none;
-  }
-  .prism-shard {
-    transform: translate3d(0, 20vh, 0) rotate(var(--tilt, 0deg));
-  }
-}
-
 /* Thin scrollbars for the calendar area. */
 .scroll-thin::-webkit-scrollbar {
   height: 8px;
