@@ -65,6 +65,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       status: data.status,
       setupType: data.setupType,
       matchFormat: data.matchFormat || null,
+      mapsPlayed: data.mapsPlayed ?? null,
       countryTag: data.countryTag || null,
       streamLinks: data.streamLinks || null,
       cleanFeedYoutube: data.cleanFeedYoutube || null,
@@ -79,7 +80,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       discordChannelId: data.discordChannelId || null,
       assignments: {
         deleteMany: {},
-        create: data.assignments.map((a) => ({ userId: a.userId, role: a.role })),
+        create: data.assignments.map((a) => ({
+          userId: a.userId,
+          role: a.role,
+          lateSubstitute: a.lateSubstitute ?? false,
+          payAdjustment: a.payAdjustment ?? null,
+          payNote: a.payNote || null,
+        })),
       },
       participants: {
         deleteMany: {},

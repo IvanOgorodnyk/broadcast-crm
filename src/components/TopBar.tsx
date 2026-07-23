@@ -50,6 +50,7 @@ export default function TopBar({ user, unread }: Props) {
         </Link>
         {link("/calendar", "Calendar")}
         {user.role === "ADMIN" && link("/admin/stats", "Work log")}
+        {user.role === "ADMIN" && link("/admin/finance", "Finance")}
         {user.role === "ADMIN" && link("/admin/users", "Admin")}
       </div>
 

@@ -26,6 +26,7 @@ type Draft = {
   status: string;
   setupType: string;
   matchFormat: string;
+  mapsPlayed: string; // number as string ("" = default to format max)
   countryTag: string;
   disciplineId: string;
   studioId: string;
@@ -38,10 +39,24 @@ type Draft = {
   notes: string;
   internalComment: string;
   color: string;
-  assignments: { userId: string; role: AssignmentRole }[];
+  assignments: {
+    userId: string;
+    role: AssignmentRole;
+    lateSubstitute: boolean;
+    payAdjustment: string; // number as string
+    payNote: string;
+  }[];
   participantIds: string[];
   streamChannelIds: string[];
 };
+
+/** Default maps for a format, shown as the "maps played" placeholder. */
+function mapsPlaceholder(format: string) {
+  if (format === "BO5") return "5";
+  if (format === "BO3") return "3";
+  if (format === "BO1") return "1";
+  return "auto";
+}
 
 function toLocalInput(iso: string) {
   const d = new Date(iso);
@@ -65,6 +80,7 @@ function emptyDraft(meta: Meta, defaultDate: Date): Draft {
     status: "CONFIRMED",
     setupType: "PC_DIRECTORS",
     matchFormat: "",
+    mapsPlayed: "",
     countryTag: "",
     disciplineId: meta.disciplines[0]?.id ?? "",
     studioId: "",
@@ -96,6 +112,7 @@ function fromEvent(e: CalendarEvent): Draft {
     status: e.status,
     setupType: e.setupType,
     matchFormat: e.matchFormat ?? "",
+    mapsPlayed: e.mapsPlayed != null ? String(e.mapsPlayed) : "",
     countryTag: e.countryTag ?? "",
     disciplineId: e.discipline.id,
     studioId: e.studio?.id ?? "",
@@ -108,7 +125,13 @@ function fromEvent(e: CalendarEvent): Draft {
     notes: e.notes ?? "",
     internalComment: e.internalComment ?? "",
     color: e.color ?? "",
-    assignments: e.assignments.map((a) => ({ userId: a.user.id, role: a.role })),
+    assignments: e.assignments.map((a) => ({
+      userId: a.user.id,
+      role: a.role,
+      lateSubstitute: a.lateSubstitute ?? false,
+      payAdjustment: a.payAdjustment != null ? String(a.payAdjustment) : "",
+      payNote: a.payNote ?? "",
+    })),
     // Media participants ride along untouched; MAIN teams are edited via teamA/teamB.
     participantIds: e.participants.filter((p) => p.type === "MEDIA").map((p) => p.id),
     streamChannelIds: e.streamChannels.map((s) => s.id),
@@ -155,6 +178,7 @@ export default function EventModal({
       status: draft.status,
       setupType: draft.setupType,
       matchFormat: draft.matchFormat || null,
+      mapsPlayed: draft.mapsPlayed.trim() === "" ? null : Number(draft.mapsPlayed),
       countryTag: draft.countryTag,
       disciplineId: draft.disciplineId,
       studioId: draft.studioId || null,
@@ -167,7 +191,15 @@ export default function EventModal({
       notes: draft.notes,
       internalComment: draft.internalComment,
       color: draft.color || null,
-      assignments: draft.assignments.filter((a) => a.userId),
+      assignments: draft.assignments
+        .filter((a) => a.userId)
+        .map((a) => ({
+          userId: a.userId,
+          role: a.role,
+          lateSubstitute: a.lateSubstitute,
+          payAdjustment: a.payAdjustment.trim() === "" ? null : Number(a.payAdjustment),
+          payNote: a.payNote || null,
+        })),
       participantIds: draft.participantIds,
       teams: [draft.teamA, draft.teamB].map((t) => t.trim()).filter(Boolean),
       streamChannelIds: draft.streamChannelIds,
@@ -306,9 +338,12 @@ function EditForm({
   error: string | null;
 }) {
   function addAssignment() {
-    set("assignments", [...draft.assignments, { userId: "", role: "CASTER" }]);
+    set("assignments", [
+      ...draft.assignments,
+      { userId: "", role: "CASTER", lateSubstitute: false, payAdjustment: "", payNote: "" },
+    ]);
   }
-  function updateAssignment(i: number, patch: Partial<{ userId: string; role: AssignmentRole }>) {
+  function updateAssignment(i: number, patch: Partial<Draft["assignments"][number]>) {
     set(
       "assignments",
       draft.assignments.map((a, idx) => (idx === i ? { ...a, ...patch } : a))
@@ -363,7 +398,7 @@ function EditForm({
         </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Field label="Setup">
           <select className={inputCls} value={draft.setupType} onChange={(e) => set("setupType", e.target.value)}>
             {SETUP_TYPES.map((s) => (
@@ -383,6 +418,17 @@ function EditForm({
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
+        </Field>
+        <Field label="Maps played">
+          <input
+            type="number"
+            min={0}
+            max={9}
+            className={inputCls}
+            value={draft.mapsPlayed}
+            onChange={(e) => set("mapsPlayed", e.target.value)}
+            placeholder={mapsPlaceholder(draft.matchFormat)}
+          />
         </Field>
         <Field label="Language">
           <select className={inputCls} value={draft.countryTag} onChange={(e) => set("countryTag", e.target.value)}>
@@ -467,30 +513,61 @@ function EditForm({
             <p className="text-sm text-gray-400">No one assigned yet.</p>
           )}
           {draft.assignments.map((a, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="flex-1">
-                <UserSelect
-                  users={meta.users}
-                  value={a.userId}
-                  onChange={(id) => updateAssignment(i, { userId: id })}
+            <div key={i} className="rounded-md border border-gray-100 bg-gray-50/60 p-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <UserSelect
+                    users={meta.users}
+                    value={a.userId}
+                    onChange={(id) => updateAssignment(i, { userId: id })}
+                  />
+                </div>
+                <select
+                  className={inputCls + " w-48 shrink-0"}
+                  value={a.role}
+                  onChange={(e) => updateAssignment(i, { role: e.target.value as AssignmentRole })}
+                >
+                  {ASSIGNMENT_ROLES.map((r) => (
+                    <option key={r} value={r}>{ASSIGNMENT_ROLE_LABEL[r]}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => removeAssignment(i)}
+                  className="px-2 text-lg leading-none text-gray-400 hover:text-brand"
+                  aria-label="Remove"
+                >
+                  ×
+                </button>
+              </div>
+              {/* Payroll extras: late substitute + manual adjustment */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 pl-1 text-xs text-gray-500">
+                <label className="flex cursor-pointer items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    className="h-3.5 w-3.5 accent-brand"
+                    checked={a.lateSubstitute}
+                    onChange={(e) => updateAssignment(i, { lateSubstitute: e.target.checked })}
+                  />
+                  Late substitute <span className="text-gray-400">(+$0.5/map)</span>
+                </label>
+                <span className="flex items-center gap-1.5">
+                  Adj $
+                  <input
+                    type="number"
+                    step="0.5"
+                    className="w-20 rounded border border-gray-200 px-2 py-1 outline-none focus:border-brand"
+                    value={a.payAdjustment}
+                    onChange={(e) => updateAssignment(i, { payAdjustment: e.target.value })}
+                    placeholder="0"
+                  />
+                </span>
+                <input
+                  className="min-w-[8rem] flex-1 rounded border border-gray-200 px-2 py-1 outline-none focus:border-brand"
+                  value={a.payNote}
+                  onChange={(e) => updateAssignment(i, { payNote: e.target.value })}
+                  placeholder="Adjustment note (e.g. covered no-show)"
                 />
               </div>
-              <select
-                className={inputCls + " w-48 shrink-0"}
-                value={a.role}
-                onChange={(e) => updateAssignment(i, { role: e.target.value as AssignmentRole })}
-              >
-                {ASSIGNMENT_ROLES.map((r) => (
-                  <option key={r} value={r}>{ASSIGNMENT_ROLE_LABEL[r]}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => removeAssignment(i)}
-                className="px-2 text-lg leading-none text-gray-400 hover:text-brand"
-                aria-label="Remove"
-              >
-                ×
-              </button>
             </div>
           ))}
         </div>
@@ -620,6 +697,15 @@ function ReadView({
         <Info label="Time" value={`${hhmm(event.startsAt)} – ${hhmm(event.endsAt)}`} />
         <Info label="Setup" value={SETUP_LABEL[event.setupType]} />
         <Info label="Language" value={event.countryTag ?? "—"} />
+        {(event.mapsPlayed != null || event.matchFormat) && (
+          <Info
+            label="Maps"
+            value={String(
+              event.mapsPlayed ??
+                (event.matchFormat === "BO5" ? 5 : event.matchFormat === "BO3" ? 3 : 1)
+            )}
+          />
+        )}
         <Info
           label="Streaming"
           value={event.streamChannels.length ? event.streamChannels.map((s) => s.name).join(", ") : "—"}

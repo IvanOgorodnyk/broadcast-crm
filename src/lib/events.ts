@@ -32,6 +32,7 @@ export function serializeEvent(e: EventWithRelations) {
     status: e.status,
     setupType: e.setupType,
     matchFormat: e.matchFormat,
+    mapsPlayed: e.mapsPlayed,
     countryTag: e.countryTag,
     streamLinks: e.streamLinks,
     cleanFeedYoutube: e.cleanFeedYoutube,
@@ -60,6 +61,9 @@ export function serializeEvent(e: EventWithRelations) {
       id: a.id,
       role: a.role,
       user: a.user,
+      lateSubstitute: a.lateSubstitute,
+      payAdjustment: a.payAdjustment,
+      payNote: a.payNote,
     })),
     participants: e.participants.map((p) => ({
       id: p.participant.id,
@@ -86,6 +90,9 @@ export const assignmentSchema = z.object({
     "GUEST",
     "SMM",
   ]),
+  lateSubstitute: z.boolean().optional().default(false),
+  payAdjustment: z.number().optional().nullable(),
+  payNote: z.string().optional().nullable(),
 });
 
 export const eventInputSchema = z.object({
@@ -104,6 +111,7 @@ export const eventInputSchema = z.object({
     "AIRGPU",
   ]),
   matchFormat: z.enum(["BO1", "BO3", "BO5"]).optional().nullable(),
+  mapsPlayed: z.number().int().min(0).max(9).optional().nullable(),
   countryTag: z.string().optional().nullable(),
   streamLinks: z.string().optional().nullable(),
   cleanFeedYoutube: z.string().optional().nullable(),

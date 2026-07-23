@@ -4,6 +4,7 @@ import { googleEnabled } from "@/lib/integrations/google";
 import { telegramEnabled } from "@/lib/integrations/telegram";
 import ProfileForm from "@/components/ProfileForm";
 import MyWork from "@/components/MyWork";
+import MyEarnings from "@/components/MyEarnings";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,9 @@ export default async function ProfilePage() {
       />
 
       {user.role !== "VIEWER" && (
-        <div className="mt-8">
+        <div className="mt-8 space-y-8">
           <MyWork />
+          <MyEarnings />
         </div>
       )}
     </div>

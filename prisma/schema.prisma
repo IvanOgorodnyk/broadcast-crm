@@ -195,6 +195,7 @@ model Event {
   status      EventStatus @default(DRAFT)
   setupType   SetupType   @default(REMOTE)
   matchFormat MatchFormat? // BO1 / BO3 / BO5
+  mapsPlayed  Int? // maps actually completed; falls back to the format max
 
   // Telegram reminder bookkeeping (set once sent, so the daily cron
   // never double-sends).
@@ -247,6 +248,11 @@ model Assignment {
   userId  String
   user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   role    AssignmentRole
+
+  // Payroll bookkeeping
+  lateSubstitute Boolean @default(false) // stepped in <3h before start (+$0.5/map)
+  payAdjustment  Float? // manual $ delta (e.g. deduction from the replaced person)
+  payNote        String? // reason for the adjustment
 
   createdAt DateTime @default(now())
 

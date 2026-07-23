@@ -40,6 +40,9 @@ export type EventAssignment = {
   id: string;
   role: AssignmentRole;
   user: MetaUser;
+  lateSubstitute?: boolean;
+  payAdjustment?: number | null;
+  payNote?: string | null;
 };
 
 export type CalendarEvent = {
@@ -51,6 +54,7 @@ export type CalendarEvent = {
   status: EventStatus;
   setupType: SetupType;
   matchFormat: MatchFormat | null;
+  mapsPlayed: number | null;
   countryTag: string | null;
   streamLinks: string | null;
   cleanFeedYoutube: string | null;
@@ -105,4 +109,45 @@ export type WorkPerson = {
   totalGames: number; // distinct games worked overall
   byBucket: Record<WorkBucket, number>;
   tournaments: WorkTournament[];
+};
+
+// ---------------------------------------------------------------------------
+// Payroll
+// ---------------------------------------------------------------------------
+
+/** One paid role on one game (a person can hold several on the same game). */
+export type PayLine = {
+  eventId: string;
+  startsAt: string;
+  title: string;
+  disciplineName: string;
+  disciplineColor: string;
+  teams: string[];
+  matchFormat: MatchFormat | null;
+  maps: number;
+  role: AssignmentRole;
+  base: number;
+  workload: number;
+  substitution: number;
+  adjustment: number;
+  note: string | null;
+  total: number;
+};
+
+export type PayTournament = {
+  title: string;
+  disciplineName: string;
+  disciplineColor: string;
+  maps: number;
+  total: number;
+  lastAt: string;
+  lines: PayLine[];
+};
+
+export type PayPerson = {
+  user: MetaUser;
+  total: number;
+  maps: number;
+  totals: { base: number; workload: number; substitution: number; adjustment: number };
+  tournaments: PayTournament[];
 };
