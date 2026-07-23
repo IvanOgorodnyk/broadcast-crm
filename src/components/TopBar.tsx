@@ -49,6 +49,7 @@ export default function TopBar({ user, unread }: Props) {
           <Logo size={24} light />
         </Link>
         {link("/calendar", "Calendar")}
+        {user.role === "ADMIN" && link("/admin/stats", "Work log")}
         {user.role === "ADMIN" && link("/admin/users", "Admin")}
       </div>
 

@@ -70,3 +70,39 @@ export type CalendarEvent = {
 };
 
 export type CalendarView = "day" | "week" | "month";
+
+// ---------------------------------------------------------------------------
+// Work tracking (stats)
+// ---------------------------------------------------------------------------
+
+/** Tracked role buckets, matching the calendar columns. */
+export type WorkBucket = "CASTER" | "ANALYST" | "DIRECTOR" | "SMM";
+
+export type WorkGame = {
+  id: string;
+  startsAt: string;
+  title: string;
+  disciplineName: string;
+  disciplineColor: string;
+  teams: string[];
+  matchFormat: MatchFormat | null;
+  /** Buckets this person held on the game (usually one). */
+  buckets: WorkBucket[];
+};
+
+export type WorkTournament = {
+  title: string;
+  disciplineName: string;
+  disciplineColor: string;
+  games: number; // distinct games this person worked in the tournament
+  byBucket: Record<WorkBucket, number>;
+  lastAt: string; // most recent game start, for sorting
+  games_list: WorkGame[];
+};
+
+export type WorkPerson = {
+  user: MetaUser;
+  totalGames: number; // distinct games worked overall
+  byBucket: Record<WorkBucket, number>;
+  tournaments: WorkTournament[];
+};
